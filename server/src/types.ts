@@ -7,9 +7,7 @@ import {
 	TableField,
 	PossibleTypes
 } from "./types/parse-types";
-import { RawTokens } from "./types/token-types";
 
-export type GetValueFunction = (tokens: RawTokens) => [ParsedType | ParsedValue, number];
 export type ConvertableTypes = Parameters
 	| Returns
 	| TableField
@@ -31,7 +29,6 @@ export interface NormalizedName {
 }
 export type NormalizedNames = NormalizedName[];
 
-export * from "./types/token-types";
 export * from "./types/parse-types";
 // export * from "./types/api/DataTypes";
 // export * from "./types/api/ApiDump";
