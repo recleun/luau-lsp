@@ -1,0 +1,41 @@
+{
+    "comments": {
+        "lineComment": "--",
+        "blockComment": [ "--[[", "]]" ]
+    },
+    "brackets": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["<", ">"],
+    ],
+    "autoClosingPairs": [
+        { "open": "{", "close": "}" },
+        { "open": "[", "close": "]" },
+        { "open": "(", "close": ")" },
+        { "open": "<", "close": ">" },
+        { "open": "`", "close": "`" },
+        { "open": "'", "close": "'" },
+        { "open": "\"", "close": "\"" }
+    ],
+    "surroundingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["<", ">"],
+        ["`", "`"],
+        ["'", "'"],
+        ["\"", "\""],
+    ],
+    "folding": {
+        "markers": {
+            "start": "^\\s*--\\s*#?region\\b",
+            "end": "^\\s*--\\s*#?endregion\\b",
+        },
+    },
+    "autoCloseBefore": "}])>",
+    "indentationRules": {
+		"increaseIndentPattern": "^((?!(\\-\\-)).)*((\\b(function|do|repeat)\\b((?!\\b(end|until)\\b).)*)|(\\{\\s*)|(\\b(then|else)\\b[;\\s]*))$",
+		"decreaseIndentPattern": "^\\s*((\\b(end|until)\\b)|(\\})|(\\))|(\\b(else)\\b[;\\s]*))"
+	}
+}
