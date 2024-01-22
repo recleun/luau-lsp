@@ -6,8 +6,8 @@ import { parse } from "./parse";
 import { readFile } from "fs";
 import * as path from "path";
 
-const ApiDumb: APIDump = require("../api/API-Dump.json");
-const DataTypesJson: DataTypes = require("../api/DataTypes.json");
+const ApiDumb: APIDump = require("../api/api-dump.json");
+const DataTypesJson: DataTypes = require("../api/data-types.json");
 
 const Enums: ParsedVariableDeclaration = {
 	Type: "Variable Declaration",
