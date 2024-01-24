@@ -2,7 +2,7 @@ import { functionTypeToString } from "../utilities/to-string/function-type-to-st
 import {
 	Parameters,
 	ParsedTokens,
-	ParsedValue,
+	Value,
 	VariableDeclaration,
 	PossibleTypes,
 	Returns,

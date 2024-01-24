@@ -4,7 +4,7 @@ import {
 	Fix,
 	NormalizedExpressions,
 	TypeDefinition,
-	ParsedValue,
+	Value,
 	VariableDeclaration,
 	PossibleTypes,
 	TableFields,
@@ -280,8 +280,8 @@ export function normalizeExpression(expressions: ExpressionContext[], AST: AST):
 	return normalizedExpressions;
 }
 
-export function createParsedValuePlaceHolder(): ParsedValue {
-	const value: ParsedValue = {
+export function createParsedValuePlaceHolder(): Value {
+	const value: Value = {
 		Type: "Value",
 		Value: {
 			Type: "Simple",

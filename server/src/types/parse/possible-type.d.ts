@@ -30,7 +30,7 @@ export interface FunctionType {
 	Body: AST
 }
 
-export type TableKey = TypeDefinition | ParsedValue | string
+export type TableKey = TypeDefinition | Value | string
 export type PossibleTypes = SimpleType | TableType | FunctionType
 
 export interface Generic {
@@ -54,7 +54,7 @@ export interface TypeDefinition {
 	References?: Reference[],
 }
 
-export interface ParsedValue {
+export interface Value {
 	Type: "Value",
 	Value: PossibleTypes,
 }

@@ -5,7 +5,7 @@ import {
 	FunctionType,
 	Generic,
 	TypeDefinition,
-	ParsedValue,
+	Value,
 	PossibleTypes,
 	TableFields
 } from "../../types";

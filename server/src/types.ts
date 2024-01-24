@@ -1,6 +1,6 @@
 import {
 	TypeDefinition,
-	ParsedValue,
+	Value,
 	Parameters,
 	Returns,
 	TableFields,
@@ -12,7 +12,7 @@ export type ConvertableTypes = Parameters
 	| Returns
 	| TableField
 	| TableFields
-	| ParsedValue
+	| Value
 	| TypeDefinition
 	| string
 
