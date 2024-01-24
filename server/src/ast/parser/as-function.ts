@@ -239,6 +239,7 @@ export function createFunctionPlaceholder(): [ParsedVariableDeclaration, Functio
 			Value: functionType,
 		},
 		IsGlobal: false,
+		References: [],
 	};
 
 	return [variable, functionType];

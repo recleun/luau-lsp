@@ -1,6 +1,6 @@
-import { Parameter, Parameters } from "../../types";
+import { ApiParameter, Parameters } from "../../types";
 
-export function isParameter(obj: any): obj is Parameter {
+export function isParameter(obj: any): obj is ApiParameter {
 	return typeof obj.Type === "string" && obj.Type === "FunctionParameter";
 }
 

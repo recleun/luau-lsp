@@ -10,6 +10,6 @@
 		"rootDir": "src",
 		"resolveJsonModule": true,
 	},
-	"include": ["src"],
+	"include": ["src", "src/rename", "src/rename.ts"],
 	"exclude": ["node_modules", ".vscode-test"]
 }

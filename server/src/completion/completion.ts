@@ -54,7 +54,7 @@ export function getCompletionItems(documents: TextDocuments<TextDocument>, textD
 			const values = tryGetFinalValue(textBeforeCursor, token.VariableValue.Value.Value);
 
 			for (const value of values) {
-				const key = toString(value.key);
+				const key = toString(value.Key);
 
 				items.push({
 					label: key,
@@ -64,7 +64,7 @@ export function getCompletionItems(documents: TextDocuments<TextDocument>, textD
 					},
 					insertTextFormat: InsertTextFormat.Snippet,
 					insertTextMode: InsertTextMode.adjustIndentation,
-					detail: value.value.Type === "Type"? value.value.RawValue: "",
+					detail: value.Value.Type === "Type"? value.Value.RawValue: "",
 				});
 			}
 		} else {

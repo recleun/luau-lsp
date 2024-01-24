@@ -14,36 +14,36 @@ export interface Class {
 
 export interface Member {
 	Category?: string;
-	MemberType: MemberType;
+	MemberType: ApiMemberType;
 	Name: string;
 	Security: SecurityClass | Security;
 	Serialization?: Serialization;
 	ThreadSafety: ThreadSafety;
-	ValueType?: Type;
+	ValueType?: ApiType;
 	Tags?: MemberTag[];
-	Parameters?: Parameter[];
-	ReturnType?: Type;
+	Parameters?: ApiParameter[];
+	ReturnType?: ApiType;
 }
 
-export enum MemberType {
+export enum ApiMemberType {
 	Callback = "Callback",
 	Event = "Event",
 	Function = "Function",
 	Property = "Property",
 }
 
-export interface Parameter {
+export interface ApiParameter {
 	Name: string;
-	Type: Type;
+	Type: ApiType;
 	Default?: string;
 }
 
-export interface Type {
-	Category: Category;
+export interface ApiType {
+	Category: ApiCategory;
 	Name: string;
 }
 
-export enum Category {
+export enum ApiCategory {
 	Class = "Class",
 	DataType = "DataType",
 	Enum = "Enum",

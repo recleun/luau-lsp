@@ -29,6 +29,6 @@ export interface NormalizedName {
 }
 export type NormalizedNames = NormalizedName[];
 
+export * from "./types/api";
 export * from "./types/parse-types";
-// export * from "./types/api/DataTypes";
-// export * from "./types/api/ApiDump";
+export * from "./types/diagnostics";

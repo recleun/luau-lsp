@@ -1,1 +1,1 @@
-export * from "./completion/completion-handler";
+export * from "./completion/completion";

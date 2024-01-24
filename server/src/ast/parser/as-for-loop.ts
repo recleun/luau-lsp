@@ -11,22 +11,22 @@ function getTypesFromTable(value: TableType, index: number) {
 	const field = value.Value[index];
 
 	if (field) {
-		if (isParsedType(field.key)) {
-			variableTypes.push(field.key.TypeValue.Type);
-		} else if (isParsedValue(field.key)) {
-			variableTypes.push(field.key.Value);
+		if (isParsedType(field.Key)) {
+			variableTypes.push(field.Key.TypeValue.Type);
+		} else if (isParsedValue(field.Key)) {
+			variableTypes.push(field.Key.Value);
 		} else {
 			variableTypes.push({
 				Type: "Simple",
-				RawValue: field.key,
-				Value: field.key,
+				RawValue: field.Key,
+				Value: field.Key,
 			});
 		}
 
-		if (isParsedType(field.value)) {
-			variableTypes.push(field.value.TypeValue.Type);
-		} else if (isParsedValue(field.value)) {
-			variableTypes.push(field.value.Value);
+		if (isParsedType(field.Value)) {
+			variableTypes.push(field.Value.TypeValue.Type);
+		} else {
+			variableTypes.push(field.Value);
 		}
 	}
 
@@ -155,6 +155,7 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 				Type: "Value",
 				Value: type,
 			},
+			References: [],
 		});
 
 		i += 1;

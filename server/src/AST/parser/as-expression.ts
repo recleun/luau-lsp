@@ -1,15 +1,17 @@
-import { Position, Range } from "vscode-languageserver";
+import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import {
 	AST,
+	Fix,
 	NormalizedExpressions,
 	ParsedType,
 	ParsedValue,
 	ParsedVariableDeclaration,
 	PossibleTypes,
 	TableFields,
+	TableKey,
 	TableType
 } from "../../types";
-import { findVariable, log, logTable, tableKeyToString } from "../../utilities";
+import { findVariable, isParsedType, log, logTable, tableFieldsToString, tableKeyToString, toString } from "../../utilities";
 import {
 	Expression1Context,
 	Expression2Context,
@@ -21,7 +23,39 @@ import {
 } from "../LuauGrammar/LuauParser";
 import { buildFunction } from "./as-function";
 import { asType, getTypeFromValue } from "./as-type";
-import { addDiagnostic } from "../../diagnostics";
+import { addDiagnostic, getCurrentUri } from "../../diagnostics";
+
+type AntlrNode = {
+	start: {
+		line: number,
+		charPositionInLine: number,
+	},
+	stop?: {
+		line: number,
+		charPositionInLine: number,
+	},
+}
+
+export function getEnd(text: string, start: Position): Position {
+	const newLines = text.split('\n');
+
+	return Position.create(
+		start.line + newLines.length - 1,
+		newLines.length === 1 ?
+			newLines[newLines.length - 1].length + start.character :
+			newLines[newLines.length - 1].length
+	);
+}
+
+export function getLocation<T extends AntlrNode>(item: T, endOffset: number = 0): Range {
+	return Range.create(
+		Position.create(item.start.line - 1, item.start.charPositionInLine),
+		Position.create(
+			(item.stop?.line || item.start.line) - 1,
+			item.stop?.charPositionInLine || (item.start.charPositionInLine + endOffset)
+		)
+	);
+}
 
 export function buildTable(table: TableconstructorContext, AST: AST): TableType {
 	const tableFields: TableFields = [];
@@ -33,11 +67,23 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 		Value: tableFields,
 	};
 
+	let index = 1;
+	const usedIndices: TableKey[] = [];
 	table.fieldList()?.field().forEach(field => {
-		const expressions = field.expression1();
+		let key: TableKey = field.NAME()?.text ?? "";
 
-		let key: ParsedType | ParsedValue | string = field.NAME()?.text ?? "";
-		if (field.CLOSE_SQUARE_BRACKETS()) {
+		const start = Position.create(field.start.line - 1, field.start.charPositionInLine);
+		const end = getEnd(field.text, start);
+		const location: Range = Range.create(start, end);
+
+		const expressions = field.expression1();
+		const name = field.NAME();
+		if (name) {
+			// a = <expression>
+			key = name.text;
+
+		} else if (field.CLOSE_SQUARE_BRACKETS()) {
+			// [<expression>] = <expression>
 			const expression = expressions.shift();
 			if (expression) {
 				const value = normalizeExpression1([expression], AST)[0].Value;
@@ -46,18 +92,69 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 					Value: value,
 				};
 			}
+
+		} else {
+			// <expression>
+			while (usedIndices.includes(String(index))) {
+				index++;
+			}
+
+			key = String(index);
+			index++;
 		}
 
-		const value: ParsedValue = {
-			Type: "Value",
-			Value: normalizeExpression1([expressions[0]], AST)[0].Value,
-		};
+		if (usedIndices.includes(key)) {
+			// Index is already there, so send warning for duplicate key.
+			const fixes: Fix[] = [
+				{
+					Fix: "",
+					FixMessage: `Remove key.`
+				}
+			];
+
+			let index = 2;
+			while (usedIndices.includes(`${key}${index}`)) {
+				index++;
+			}
+
+			const fixedKey = `${key}${index}`;
+			fixes.push({
+				Fix: fixedKey,
+				FixMessage: `Change to ${fixedKey}`
+			});
+
+			addDiagnostic({
+				message: "Duplicate defined key.",
+				code: "duplicate-key",
+				severity: DiagnosticSeverity.Warning,
+				range: Range.create(
+					location.start,
+					Position.create(
+						location.end.line,
+						location.end.character + 1, // To include the , or ;
+					)
+				),
+				data: {
+					Fixes: fixes,
+				},
+			});
+
+			return;
+		}
+		usedIndices.push(key);
+
+		const value: PossibleTypes = normalizeExpression1([expressions[0]], AST)[0].Value;
 
 		tableFields.push({
-			key: key,
-			value: value,
+			Key: key,
+			Value: value,
+			Type: getTypeFromValue(value)[0],
+			References: [],
+			Start: location.start,
+			End: location.end,
 		});
 	});
+	parsedTable.RawValue = tableFieldsToString(tableFields, " = ");
 
 	return parsedTable;
 }
@@ -68,6 +165,8 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 	expressions.forEach(expression => {
 		let table;
 		let functionContext;
+		let string;
+		let number;
 		let prefixExp;
 
 		if ((table = expression.tableconstructor())) {
@@ -78,7 +177,33 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 			normalizedExpressions.push({
 				Value: buildFunction(functionContext.funcbody())
 			});
-		} else if ((prefixExp = expression.prefixexp())) {
+		} /* else if ((string = expression.STRING())) {
+			normalizedExpressions.push({
+				Value: {
+					Type: "Simple",
+					RawValue: string.text,
+					Value: string.text
+				},
+				Type: {
+					Type: "Simple",
+					RawValue: "string",
+					Value: "string",
+				},
+			});
+		} else if ((number = expression.NUMBER())) {
+			normalizedExpressions.push({
+				Value: {
+					Type: "Simple",
+					RawValue: number.text,
+					Value: number.text
+				},
+				Type: {
+					Type: "Simple",
+					RawValue: "number",
+					Value: "number",
+				},
+			});
+		} */ else if ((prefixExp = expression.prefixexp())) {
 			const [value, type] = handlePrefixExp(AST, prefixExp);
 
 			normalizedExpressions.push({
@@ -191,6 +316,7 @@ export function createVariablePlaceholder(type?: string): ParsedVariableDeclarat
 			Generics: [],
 		},
 		VariableValue: createParsedValuePlaceHolder(),
+		References: [],
 	};
 
 	return variable;
@@ -199,7 +325,7 @@ export function createVariablePlaceholder(type?: string): ParsedVariableDeclarat
 export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [PossibleTypes, PossibleTypes] {
 	const varOrExp = prefixExp.varOrExp();
 	const variable = varOrExp.var();
-	let expression: ExpressionContext|undefined;
+	let expression: ExpressionContext | undefined;
 
 	// const startPosition = Position.create(prefixExp.start.line, prefixExp.start.charPositionInLine);
 	const startPosition = Position.create(prefixExp.start.line - 1, prefixExp.start.charPositionInLine);
@@ -216,16 +342,16 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 		let expression;
 
 		if (name) {
-			finalType = findVariable(name.text, currentAst, currentLocation)?.VariableType.TypeValue.Type;
+			const variable = findVariable(name.text, currentAst, currentLocation);
+			if (variable) {
+				finalType = variable.VariableType.TypeValue.Type;
+				finalValue = variable.VariableValue.Value;
+			}
 
 		} else if ((expression = variable.expression())) {
 			const name = normalizeExpression([expression], currentAst)[0].Value.RawValue;
 			const table = findVariable(name, currentAst, currentLocation);
 			if (table?.VariableType.TypeValue.Type.Type === "Table") {
-				variable.varSuffix().forEach(suffex => {
-					suffex.NAME();
-				});
-
 				finalType = findVariable(name, currentAst, currentLocation)?.VariableType.TypeValue.Type;
 			}
 		}
@@ -235,7 +361,12 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 				break;
 			}
 
-			finalType = handleVarSuffex(suffex, finalType);
+			const result = handleVarSuffex(suffex, finalType);
+			if (!result) {
+				break;
+			}
+
+			[finalType, finalValue] = result;
 		}
 
 	} else if ((expression = varOrExp.expression())) {
@@ -269,6 +400,7 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 			break;
 		}
 
+		finalValue = undefined;
 		finalType = handleNameAndArgs(nameAndArgs, finalType);
 	}
 
@@ -286,17 +418,51 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 	];
 }
 
-export function handleVarSuffex(varSuffex: VarSuffixContext, finalType: PossibleTypes): PossibleTypes | undefined {
+export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalType: PossibleTypes): [PossibleTypes, PossibleTypes | undefined] | undefined {
+	let finalType: PossibleTypes | undefined = currentFinalType;
+	for (const nameAndArgs of varSuffex.nameAndArgs()) {
+		if (!finalType) {
+			break;
+		}
+
+		finalType = handleNameAndArgs(nameAndArgs, finalType);
+	}
+	if (!finalType) {
+		return;
+	}
+
 	const name = varSuffex.NAME();
 	if (name && finalType.Type === "Table") {
 		for (const field of finalType.Value) {
-			if (tableKeyToString(field.key) === name.text) {
-				return (field.value as ParsedValue).Value;
+			const key = tableKeyToString(field.Key);
+			if (key === name.text) {
+
+				const uri = getCurrentUri();
+
+				if (uri && varSuffex.stop) {
+					field.References.push({
+						FileUri: uri,
+						Start: {
+							line: varSuffex.start.line - 1,
+							character: varSuffex.start.charPositionInLine + 1,
+						},
+						End: {
+							line: varSuffex.stop.line - 1,
+							character: varSuffex.start.charPositionInLine + 1 + key.length,
+						},
+					});
+				}
+
+				const value = field.Value as PossibleTypes;
+
+				return (
+					isParsedType(field.Value)
+					&& [field.Value.TypeValue.Type, undefined]
+					|| [getTypeFromValue(value)[0], value]
+				);
 			}
 		}
 
-	} else if (!name && finalType.Type === "Function") {
-		return finalType.Value.Returns[0].ReturnType.TypeValue.Type;
 	}
 }
 
@@ -304,8 +470,27 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalType: Po
 	const name = nameAndArgs.NAME();
 	if (name && finalType.Type === "Table") {
 		for (const field of finalType.Value) {
-			if (tableKeyToString(field.key) === name.text) {
-				finalType = (field.value as ParsedValue).Value;
+			const key = tableKeyToString(field.Key);
+			if (key === name.text) {
+				finalType = field.Value as PossibleTypes;
+
+				const uri = getCurrentUri();
+
+				if (uri && nameAndArgs.stop) {
+					field.References.push({
+						FileUri: uri,
+						Start: {
+							line: nameAndArgs.start.line - 1,
+							character: nameAndArgs.start.charPositionInLine + 1,
+						},
+						End: {
+							line: nameAndArgs.stop.line - 1,
+							character: nameAndArgs.start.charPositionInLine + 1 + key.length,
+						},
+					});
+				}
+
+				break;
 			}
 		}
 	}

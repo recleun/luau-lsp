@@ -1,9 +1,16 @@
 import { CustomArray } from "../global-types";
-import { AST, Parameters, Returns } from "../parse-types";
+import { AST, ASTNode, Parameters, Reference, Returns } from "../parse-types";
 
-export interface TableField {
-	key: TableKey,
-	value: ParsedType | ParsedValue,
+interface TableFieldBase extends ASTNode {
+	Key: TableKey,
+	References: Reference[],
+}
+export interface TableField extends TableFieldBase {
+	Value: PossibleTypes,
+	Type: PossibleTypes,
+}
+export interface TableFieldType extends TableFieldBase {
+	Value: ParsedType,
 }
 
 export interface SimpleType {
@@ -31,17 +38,20 @@ export interface Generic {
 	Variadic: boolean,
 }
 
+export interface Type {
+	Type: PossibleTypes,
+	AndTypes: ParsedType[],
+	OrTypes: ParsedType[],
+}
+
 export interface ParsedType {
 	Type: "Type",
 	TypeName: string,
-	TypeValue: {
-		Type: PossibleTypes,
-		AndTypes: ParsedType[],
-		OrTypes: ParsedType[],
-	}
+	TypeValue: Type,
 	RawValue: string,
 	IsExported: boolean,
-	Generics: Generic[]
+	Generics: Generic[],
+	References?: Reference[],
 }
 
 export interface ParsedValue {
@@ -49,4 +59,4 @@ export interface ParsedValue {
 	Value: PossibleTypes,
 }
 
-export type TableFields = CustomArray<TableField, "TableFields">;
+export type TableFields = CustomArray<TableField | TableFieldType, "TableFields">;

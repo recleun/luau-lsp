@@ -9,7 +9,7 @@ export interface Constructor {
 }
 
 export interface ConstructorMember {
-	MemberType: MemberType;
+	MemberType: DataTypesMemberType;
 	Name: string;
 	Parameters?: ConstructorParameter[];
 	ReturnType?: ConstructorReturnType;
@@ -18,7 +18,7 @@ export interface ConstructorMember {
 	TupleReturns?: ValueType[];
 }
 
-export enum MemberType {
+export enum DataTypesMemberType {
 	Function = "Function",
 	Property = "Property",
 }
@@ -31,11 +31,11 @@ export interface ConstructorParameter {
 
 export interface DataType {
 	Name: string;
-	Category?: Category;
+	Category?: DataTypesCategory;
 	Generic?: string;
 }
 
-export enum Category {
+export enum DataTypesCategory {
 	Enum = "Enum",
 }
 
@@ -66,7 +66,7 @@ export interface DataType {
 }
 
 export interface DataTypeMember {
-	MemberType: MemberType;
+	MemberType: DataTypesMemberType;
 	Name: string;
 	Parameters?: DataTypeParameter[];
 	ReturnType?: DataTypeReturnType;

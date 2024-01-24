@@ -16,14 +16,23 @@ import {
 	InitializeResult,
 	HoverParams,
 	WorkspaceEdit,
-	CodeActionKind
+	CodeActionKind,
+	MarkupContent,
+	MarkupKind,
+	Hover,
+	Range,
+	DefinitionParams,
+	RenameParams
 } from 'vscode-languageserver/node';
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
-import { generateAST } from './ast';
-import { getDiagnostics } from './diagnostics';
+import { Position, TextDocument } from 'vscode-languageserver-textdocument';
+import { generateAST, getAST } from './ast';
+import { getCurrentUri, getDiagnostics } from './diagnostics';
 import { getCompletionItems } from './completion';
-import { logTable, setup } from "./utilities";
+import { log, logTable, setup, tableFieldToString, wrapInCodeBlocks } from "./utilities";
+import { AST } from "./types";
+import { onHover } from "./hover";
+import { onDefinition } from "./definition";
 
 const connection = createConnection(ProposedFeatures.all);
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
@@ -33,6 +42,13 @@ setup(connection);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
+
+interface ExampleSettings {}
+
+const defaultSettings: ExampleSettings = {};
+let globalSettings: ExampleSettings = defaultSettings;
+
+const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
@@ -58,8 +74,8 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			hoverProvider: true,
 			codeActionProvider: true,
+			definitionProvider: true,
 			//TODO complete the rest.
-			// signatureHelpProvider: {},
 
 		}
 	};
@@ -111,27 +127,6 @@ connection.onCodeAction(params => {
 	}];
 });
 
-connection.onCodeActionResolve(codeAction => {
-	return codeAction;
-});
-
-connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-		});
-	}
-});
-
-interface ExampleSettings {}
-
-const defaultSettings: ExampleSettings = {};
-let globalSettings: ExampleSettings = defaultSettings;
-
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
-
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		documentSettings.clear();
@@ -158,10 +153,6 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	}
 	return result;
 }
-
-documents.onDidClose(e => {
-	documentSettings.delete(e.document.uri);
-});
 
 documents.onDidChangeContent(change => {
 	generateAST(change.document);
@@ -222,20 +213,22 @@ connection.onDidChangeWatchedFiles(_change => {
 
 });
 
-connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-	return getCompletionItems(documents, textDocumentPosition);
-});
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams) => getCompletionItems(documents, textDocumentPosition));
+connection.onCompletionResolve((item: CompletionItem) => item);
+connection.onHover((hoverParams: HoverParams) => onHover(hoverParams));
+connection.onCodeActionResolve(codeAction => codeAction);
+connection.onDefinition((definitionParams: DefinitionParams) => onDefinition(definitionParams));
+documents.onDidClose(e => documentSettings.delete(e.document.uri));
 
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		return item;
+connection.onInitialized(() => {
+	if (hasConfigurationCapability) {
+		connection.client.register(DidChangeConfigurationNotification.type, undefined);
 	}
-);
-
-connection.onHover((hoverParams: HoverParams) => {
-	return null;
+	if (hasWorkspaceFolderCapability) {
+		connection.workspace.onDidChangeWorkspaceFolders(_event => {
+		});
+	}
 });
 
 documents.listen(connection);
-
 connection.listen();

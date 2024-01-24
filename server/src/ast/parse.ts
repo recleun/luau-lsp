@@ -7,8 +7,6 @@ import {
 	ParsedToken,
 	ParsedVariableDeclaration,
 } from "../types";
-import { LuauCustomLexer } from './LuauGrammar/LuauCustomLexer';
-import { LuauListener } from './LuauGrammar/LuauListener';
 import {
 	ForExpressionContext,
 	ForInExpressionContext,
@@ -31,7 +29,7 @@ import {
 	Recognizer,
 	Token,
 } from 'antlr4ts';
-import { normalizeExpression } from "./parser/as-expression";
+import { getEnd, normalizeExpression } from "./parser/as-expression";
 import { normalizeAllNamesList } from "./parser/as-names";
 import { buildFunction, createFunctionPlaceholder } from "./parser/as-function";
 import { functionTypeToString } from "../utilities/to-string/function-type-to-string";
@@ -39,19 +37,16 @@ import { asType } from "./parser/as-type";
 import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { asForInLoop, asForLoop, createForInPlaceholder, createForNumericPlaceholder } from "./parser/as-for-loop";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { logTable } from "../utilities";
+import { log, logTable } from "../utilities";
 import { addDiagnostic, setFile } from "../diagnostics";
+import { LuauLexer } from "./LuauGrammar/LuauLexer";
+import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
 
 let currentAst: AST;
 
-function setNodeEnds(token: ParsedToken, context: ParserRuleContext, hasReferences: boolean): ParsedToken {
-	token.Start = Position.create(context.start.line, context.start.charPositionInLine);
-	if (context.stop) {
-		token.End = Position.create(context.stop.line, context.stop.charPositionInLine);
-	}
-	if (hasReferences) {
-		token.References = [];
-	}
+function setNodeEnds(token: ParsedToken, context: ParserRuleContext): ParsedToken {
+	token.Start = Position.create(context.start.line - 1, context.start.charPositionInLine);
+	token.End = getEnd(context.text, token.Start);
 
 	return token;
 }
@@ -143,16 +138,8 @@ class Listener implements LuauListener {
 	exitForExpression(ctx: ForExpressionContext) {
 		if (ctx.exception) { return; }
 
-		if (currentAst.Parent) {
-			// This case is always true but TS wouldn't know that of course.
-			currentAst = currentAst.Parent;
-		}
-
-		const parsedToken = setNodeEnds(
-			currentAst.Tokens[currentAst.Tokens.length - 1],
-			ctx,
-			false
-		);
+		currentAst = currentAst.Parent!;
+		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForLoop(currentAst, ctx, parsedToken as ForNumeric);
 	}
 
@@ -166,16 +153,8 @@ class Listener implements LuauListener {
 	exitForInExpression(ctx: ForInExpressionContext) {
 		if (ctx.exception) { return; }
 
-		if (currentAst.Parent) {
-			// This case is always true but TS wouldn't know that of course.
-			currentAst = currentAst.Parent;
-		}
-
-		const parsedToken = setNodeEnds(
-			currentAst.Tokens[currentAst.Tokens.length - 1],
-			ctx,
-			false
-		);
+		currentAst = currentAst.Parent!;
+		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForInLoop(currentAst, ctx, parsedToken as ForIn);
 	}
 
@@ -190,16 +169,9 @@ class Listener implements LuauListener {
 		if (ctx.exception) { return; }
 
 		const functionData = buildFunction(ctx.funcbody(), currentAst);
-		if (currentAst.Parent) {
-			// This case is always true but TS wouldn't know that of course.
-			currentAst = currentAst.Parent;
-		}
+		currentAst = currentAst.Parent!;
 
-		const parsedToken = setNodeEnds(
-			currentAst.Tokens[currentAst.Tokens.length - 1],
-			ctx,
-			false
-		);
+		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 
 		const variable = parsedToken as ParsedVariableDeclaration;
 		variable.VariableName = ctx.funcname().text;
@@ -219,6 +191,7 @@ class Listener implements LuauListener {
 			},
 			Generics: [],
 		};
+		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 	}
 
 	enterLocalFunction(ctx: LocalFunctionContext) {
@@ -232,15 +205,11 @@ class Listener implements LuauListener {
 		if (ctx.exception) { return; }
 
 		const functionData = buildFunction(ctx.funcbody(), currentAst);
-		if (currentAst.Parent) {
-			// This case is always true but TS wouldn't know that of course.
-			currentAst = currentAst.Parent;
-		}
+		currentAst = currentAst.Parent!;
 
 		const variable = setNodeEnds(
 			currentAst.Tokens[currentAst.Tokens.length - 1],
-			ctx,
-			false
+			ctx
 		) as ParsedVariableDeclaration;
 		variable.VariableName = ctx.NAME().text;
 		variable.VariableValue = {
@@ -259,6 +228,7 @@ class Listener implements LuauListener {
 			},
 			Generics: [],
 		};
+		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 	}
 
 	exitVariableDeclaration(ctx: VariableDeclarationContext) {
@@ -292,7 +262,7 @@ class Listener implements LuauListener {
 				VariableType: {
 					Type: "Type",
 					TypeName: "",
-					RawValue: "",
+					RawValue: type.RawValue,
 					TypeValue: {
 						Type: type,
 						AndTypes: [],
@@ -300,7 +270,8 @@ class Listener implements LuauListener {
 					},
 					IsExported: false,
 					Generics: [],
-				}
+				},
+				References: [],
 			};
 
 			if (variable.VariableValue.Value.RawValue !== "") {
@@ -310,7 +281,7 @@ class Listener implements LuauListener {
 			}
 
 			i += 1;
-			currentAst.Tokens.push(setNodeEnds(variable, ctx, true));
+			currentAst.Tokens.push(setNodeEnds(variable, ctx));
 		});
 
 		// TODO: Try getting value from inside do blocks.
@@ -323,7 +294,7 @@ class Listener implements LuauListener {
 		type.RawValue = `type ${type.TypeName} = ${type.RawValue}`;
 		type.IsExported = ctx.EXPORT() !== undefined;
 
-		currentAst.Tokens.push(setNodeEnds(type, ctx, true));
+		currentAst.Tokens.push(setNodeEnds(type, ctx));
 	}
 
 	// exitComment(ctx: CommentContext) {
@@ -339,7 +310,7 @@ export function parse(code: string, stopLog?: boolean): AST {
 	};
 	currentAst = AST;
 
-	const lexer = new LuauCustomLexer(CharStreams.fromString(code));
+	const lexer = new LuauLexer(CharStreams.fromString(code));
 	const tokens = new CommonTokenStream(lexer);
 	const parser = new LuauParser(tokens);
 

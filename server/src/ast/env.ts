@@ -1,10 +1,21 @@
 import { functionTypeToString } from "../utilities/to-string/function-type-to-string";
-import { FunctionType, Parameters, ParsedTokens, ParsedValue, ParsedVariableDeclaration, PossibleTypes, Returns, TableFields } from "../types";
+import {
+	Parameters,
+	ParsedTokens,
+	ParsedValue,
+	ParsedVariableDeclaration,
+	PossibleTypes,
+	Returns,
+	SimpleType,
+	TableFields,
+	TableType
+} from "../types";
 import { APIDump } from "../types/api/api-dump";
 import { DataTypes } from "../types/api/data-types";
 import { parse } from "./parse";
 import { readFile } from "fs";
 import * as path from "path";
+import { getTypeFromValue } from "./parser/as-type";
 
 const ApiDumb: APIDump = require("../api/api-dump.json");
 const DataTypesJson: DataTypes = require("../api/data-types.json");
@@ -38,6 +49,7 @@ const Enums: ParsedVariableDeclaration = {
 		},
 		Generics: [],
 	},
+	References: [],
 };
 const Constructors: ParsedVariableDeclaration[] = [];
 
@@ -46,35 +58,31 @@ ApiDumb.Enums.forEach(enumItem => {
 	if (Enums.VariableType.TypeValue.Type.Type !== "Table") { return; }
 	// Above cases are never true but just to shut TypeScript.
 
-	const items: ParsedValue = {
-		Type: "Value",
-		Value: {
-			Type: "Table",
-			RawValue: `Enum.${enumItem.Name}`,
-			Value: []
-		}
+	const items: TableType = {
+		Type: "Table",
+		RawValue: `Enum.${enumItem.Name}`,
+		Value: []
 	};
 
 	enumItem.Items.forEach(item => {
-		if (items.Value.Type !== "Table") { return; }
-		// Above case is never true but just to shut TypeScript.
-
-		items.Value.Value.push({
-			key: item.Name,
-			value: {
-				Type: "Value",
-				Value: {
-					Type: "Simple",
-					Value: item.Name,
-					RawValue: `Enum.${enumItem.Name}.${item.Name}`,
-				},
-			}
+		const value: SimpleType = {
+			Type: "Simple",
+			Value: item.Name,
+			RawValue: `Enum.${enumItem.Name}.${item.Name}`,
+		};
+		items.Value.push({
+			Key: item.Name,
+			Value: value,
+			Type: value,
+			References: [],
 		});
 	});
 
 	Enums.VariableValue.Value.Value.push({
-		key: enumItem.Name,
-		value: items
+		Key: enumItem.Name,
+		Value: items,
+		Type: items,
+		References: [],
 	});
 });
 DataTypesJson.Constructors.forEach(constructor => {
@@ -164,11 +172,10 @@ DataTypesJson.Constructors.forEach(constructor => {
 		}
 
 		constructorData.push({
-			key: key,
-			value: {
-				Type: "Value",
-				Value: value,
-			},
+			Key: key,
+			Value: value,
+			Type: getTypeFromValue(value)[0],
+			References: [],
 		});
 	});
 
@@ -200,7 +207,8 @@ DataTypesJson.Constructors.forEach(constructor => {
 				Value: constructorData
 			}
 		},
-		IsGlobal: true
+		IsGlobal: true,
+		References: [],
 	});
 });
 
@@ -228,7 +236,8 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err,
 				VariableValue: {
 					Type: "Value",
 					Value: token.TypeValue.Type,
-				}
+				},
+				References: [],
 			};
 
 			return variable;
@@ -253,7 +262,8 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err
 				VariableValue: {
 					Type: "Value",
 					Value: token.TypeValue.Type,
-				}
+				},
+				References: [],
 			};
 
 			return variable;

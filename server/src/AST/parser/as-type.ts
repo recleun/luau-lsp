@@ -1,6 +1,7 @@
 import { log, toString } from "../../utilities";
 import { functionTypeToString } from "../../utilities";
 import {
+	DiagnosticData,
 	FunctionType,
 	Generic,
 	ParsedType,
@@ -26,7 +27,7 @@ interface ErrorMessage {
 	Severity: DiagnosticSeverity,
 	Offset: number,
 	Index: number,
-	Data: LSPAny,
+	Data?: DiagnosticData,
 }
 interface RegExpData {
 	RegExp: RegExp,
@@ -135,9 +136,13 @@ export function getEscapeErrors(string: string): ErrorMessage[] {
 					Severity: DiagnosticSeverity.Error,
 					Text: regexData.ErrorMessage ?? patternData.ErrorMessage,
 					Data: fixedValue === "" ? undefined : {
-						Fix: fixedValue,
-						FixMessage: `Change to "${fixedValue}".`
-					},
+						Fixes: [
+							{
+								Fix: fixedValue,
+								FixMessage: `Change to "${fixedValue}".`
+							}
+						]
+					}
 				});
 			}
 		});
@@ -295,7 +300,7 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 		let fields;
 		if ((type = tableType.type())) {
 			tableFields.push({
-				key: {
+				Key: {
 					Type: "Value",
 					Value: {
 						Type: "Simple",
@@ -303,7 +308,8 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 						Value: "number",
 					},
 				},
-				value: asType(type),
+				Value: asType(type),
+				References: [],
 			});
 
 		} else if ((fields = tableType.propList())) {
@@ -312,15 +318,16 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 				let tableProperty;
 				if ((fieldIndexer = property.tableIndexer())) {
 					tableFields.push({
-						key: asType(fieldIndexer.type(0)),
-						value: asType(fieldIndexer.type(1)),
+						Key: asType(fieldIndexer.type(0)),
+						Value: asType(fieldIndexer.type(1)),
+						References: [],
 					});
 
 				} else if ((tableProperty = property.tableProperty())) {
 					const key = tableProperty.NAME().text;
 
 					tableFields.push({
-						key: {
+						Key: {
 							Type: "Type",
 							TypeName: "",
 							RawValue: key,
@@ -336,7 +343,8 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 							},
 							Generics: [],
 						},
-						value: asType(tableProperty.type()),
+						Value: asType(tableProperty.type()),
+						References: [],
 					});
 				}
 			});

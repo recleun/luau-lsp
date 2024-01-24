@@ -10,6 +10,7 @@ export interface ParsedVariableDeclaration {
 	VariableType: ParsedType,
 	VariableValue: ParsedValue,
 	RawValue: string,
+	References: Reference[],
 }
 
 export interface Reference {
@@ -21,7 +22,6 @@ export interface Reference {
 export interface ASTNode {
 	Start?: Position,
 	End?: Position,
-	References?: Reference[],
 }
 
 export type PossibleTokens =
@@ -35,6 +35,7 @@ export type ParsedToken = ASTNode & PossibleTokens
 export type ParsedTokens = ParsedToken[];
 export interface AST {
 	Tokens: ParsedTokens,
+	Uri?: URI,
 	Parent?: AST,
 }
 

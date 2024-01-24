@@ -1,10 +1,11 @@
-import { Diagnostic, DiagnosticRelatedInformation, URI } from "vscode-languageserver";
+import { DiagnosticRelatedInformation, URI } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { LuauDiagnostic } from "../types";
 
-const diagnostics: { [key: URI]: Diagnostic[] } = {};
+const diagnostics: { [key: URI]: LuauDiagnostic[] } = {};
 let currentUri: URI;
 
-export function addDiagnostic(diagnostic: Diagnostic, ...extra: string[]) {
+export function addDiagnostic(diagnostic: LuauDiagnostic, ...extra: string[]) {
 	if (!currentUri) { return; }
 
 	const relatedInformation: DiagnosticRelatedInformation[] = [];
@@ -34,6 +35,10 @@ export function setFile(textdocument: TextDocument) {
 	diagnostics[currentUri] = [];
 }
 
-export function getDiagnostics(document: TextDocument): Diagnostic[] {
+export function getCurrentUri(): URI|undefined {
+	return currentUri;
+}
+
+export function getDiagnostics(document: TextDocument): LuauDiagnostic[] {
 	return diagnostics[document.uri] || [];
 }

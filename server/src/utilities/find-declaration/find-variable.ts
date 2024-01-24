@@ -1,6 +1,6 @@
 import { AST, ParsedVariableDeclaration, TableField, TableFields } from "../../types";
-import { addDiagnostic } from "../../diagnostics";
-import { DiagnosticSeverity, Range } from "vscode-languageserver";
+import { addDiagnostic, getCurrentUri } from "../../diagnostics";
+import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { tableKeyToString } from "../to-string";
 
 export function findVariable(variableName: string, AST: AST, currentLocation: Range): ParsedVariableDeclaration | undefined {
@@ -8,6 +8,22 @@ export function findVariable(variableName: string, AST: AST, currentLocation: Ra
 		const element = AST.Tokens[i];
 		if (element.Type !== "Variable Declaration") { continue; }
 		if (element.VariableName !== variableName) { continue; }
+
+		const uri = getCurrentUri();
+		if (uri) {
+			const actualLocation = Range.create(
+				currentLocation.start,
+				Position.create(
+					currentLocation.end.line,
+					currentLocation.start.character + variableName.length
+				)
+			);
+			element.References.push({
+				FileUri: uri,
+				Start: actualLocation.start,
+				End: actualLocation.end,
+			});
+		}
 
 		return element;
 	}
@@ -28,15 +44,15 @@ export function findVariable(variableName: string, AST: AST, currentLocation: Ra
 
 export function tryGetFinalValue(tableChain: string, table: TableFields): TableFields {
 	const fieldNames = tableChain.split(/[.:]/g);
-	let fields: TableField[] = [];
+	let fields: TableFields = [];
+	fields.Content = "TableFields";
 
 	for (const field of table) {
 		if (
-			fieldNames[1] === tableKeyToString(field.key).substring(0, fieldNames[1].length) &&
-			field.value.Type === "Value"
+			fieldNames[1] === tableKeyToString(field.Key).substring(0, fieldNames[1].length)
 		) {
-			if (field.value.Value.Type === "Table" && fieldNames.length > 2) {
-				fields = tryGetFinalValue(tableChain.replace(/.*?[.:]/, ""), field.value.Value.Value);
+			if (field.Value.Type === "Table" && fieldNames.length > 2) {
+				fields = tryGetFinalValue(tableChain.replace(/.*?[.:]/, ""), field.Value.Value);
 				break;
 			} else if (fieldNames.length <= 2) {
 				fields.push(field);

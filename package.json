@@ -132,7 +132,9 @@
 
 		"watch": "npm run clean && npm run build && cd server && npx tsc -b -w",
 
-		"compileGrammar": "antlr4ts -visitor ./server/src/grammar/Luau.g4 -o ./server/src/AST/LuauGrammar",
+		"compileGrammar": "npm run compileLexer && npm run compileParser",
+		"compileLexer": "antlr4ts -visitor ./server/src/grammar/LuauLexer.g4 -o ./server/src/AST/LuauGrammar",
+		"compileParser": "antlr4ts -visitor ./server/src/grammar/LuauParser.g4 -o ./server/src/AST/LuauGrammar",
 
 		"copyExtras": "npm run copyEnv && npm run copyApi",
 		"copyEnv": "xcopy \"server/src/env\" \"server/out/env\" /E /H /C /I",
