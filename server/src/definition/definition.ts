@@ -1,6 +1,6 @@
 import { DefinitionLink, DefinitionParams, Hover, MarkupKind, Position, Range } from "vscode-languageserver";
 import { getCurrentUri } from "../diagnostics";
-import { AST, ParsedVariableDeclaration, Reference, TableField, TableFieldType } from "../types";
+import { AST, VariableDeclaration, Reference, TableField, TableFieldType } from "../types";
 import { log, logTable, tableFieldToString } from "../utilities";
 import { getAST } from "../ast";
 
@@ -17,7 +17,7 @@ export function isInBounds(start: Position, end: Position, position: Position): 
 type NodeLocation = Range;
 type ReferenceLocation = Range;
 type VariableData = [
-	ParsedVariableDeclaration | TableField | TableFieldType,
+	VariableDeclaration | TableField | TableFieldType,
 	NodeLocation,
 	string,
 	ReferenceLocation,

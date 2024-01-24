@@ -1,5 +1,5 @@
 import { isParsedType, isParsedValue, log, logTable, toString } from "../../utilities";
-import { AST, ForIn, ForNumeric, ParsedTokens, ParsedType, ParsedVariableDeclaration, PossibleTypes, TableType } from "../../types";
+import { AST, ForIn, ForNumeric, ParsedTokens, ParsedType, VariableDeclaration, PossibleTypes, TableType } from "../../types";
 import { globals } from "../env";
 import { ForExpressionContext, ForInExpressionContext } from "../LuauGrammar/LuauParser";
 import { buildTable, createParsedValuePlaceHolder, createVariablePlaceholder, normalizeExpression, normalizeExpression1 } from "./as-expression";
@@ -60,7 +60,7 @@ function mergeVariableTypes(variableTypes: PossibleTypes[], otherVariableTypes: 
 }
 
 export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionContext, loopData: ForIn): ForIn {
-	const variables: ParsedVariableDeclaration[] = [];
+	const variables: VariableDeclaration[] = [];
 	const variableTypes: PossibleTypes[] = [];
 
 	let expression;

@@ -3,7 +3,7 @@ import {
 	Parameters,
 	ParsedTokens,
 	ParsedValue,
-	ParsedVariableDeclaration,
+	VariableDeclaration,
 	PossibleTypes,
 	Returns,
 	SimpleType,
@@ -20,7 +20,7 @@ import { getTypeFromValue } from "./parser/as-type";
 const ApiDumb: APIDump = require("../api/api-dump.json");
 const DataTypesJson: DataTypes = require("../api/data-types.json");
 
-const Enums: ParsedVariableDeclaration = {
+const Enums: VariableDeclaration = {
 	Type: "Variable Declaration",
 	IsGlobal: true,
 	RawValue: "Enum",
@@ -51,7 +51,7 @@ const Enums: ParsedVariableDeclaration = {
 	},
 	References: [],
 };
-const Constructors: ParsedVariableDeclaration[] = [];
+const Constructors: VariableDeclaration[] = [];
 
 ApiDumb.Enums.forEach(enumItem => {
 	if (Enums.VariableValue.Value.Type !== "Table") { return; }
@@ -227,7 +227,7 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err,
 				token.TypeName = "typeof";
 			}
 
-			const variable: ParsedVariableDeclaration = {
+			const variable: VariableDeclaration = {
 				Type: "Variable Declaration",
 				RawValue: token.RawValue.replace(/type (.*?)\s*:/, "local $1 ="),
 				IsGlobal: true,
@@ -253,7 +253,7 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err
 	const AST = parse(code, true);
 	AST.Tokens.map(token => {
 		if (token.Type === "Type") {
-			const variable: ParsedVariableDeclaration = {
+			const variable: VariableDeclaration = {
 				Type: "Variable Declaration",
 				RawValue: token.RawValue.replace(/type (.*?)\s*:/, "local $1 ="),
 				IsGlobal: true,

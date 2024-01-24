@@ -3,3 +3,5 @@ node_modules
 .VSCodeCounter
 LuauGrammar
 .antlr
+rename
+rename.ts

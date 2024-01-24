@@ -1,9 +1,9 @@
-import { AST, ParsedVariableDeclaration, TableField, TableFields } from "../../types";
+import { AST, VariableDeclaration, TableField, TableFields } from "../../types";
 import { addDiagnostic, getCurrentUri } from "../../diagnostics";
 import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { tableKeyToString } from "../to-string";
 
-export function findVariable(variableName: string, AST: AST, currentLocation: Range): ParsedVariableDeclaration | undefined {
+export function findVariable(variableName: string, AST: AST, currentLocation: Range): VariableDeclaration | undefined {
 	for (let i = AST.Tokens.length - 1; i >= 0; i--) {
 		const element = AST.Tokens[i];
 		if (element.Type !== "Variable Declaration") { continue; }

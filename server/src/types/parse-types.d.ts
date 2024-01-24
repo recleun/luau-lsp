@@ -3,7 +3,7 @@ import { IfStatement } from "./parse-types";
 import { ForLoop } from "./parse/for-loops";
 import { ParsedType, ParsedValue } from "./parse/possible-type";
 
-export interface ParsedVariableDeclaration {
+export interface VariableDeclaration {
 	Type: "Variable Declaration",
 	VariableName: string,
 	IsGlobal: boolean,
@@ -25,7 +25,7 @@ export interface ASTNode {
 }
 
 export type PossibleTokens =
-	ParsedVariableDeclaration |
+	VariableDeclaration |
 	ParsedType |
 	ForLoop |
 	IfStatement

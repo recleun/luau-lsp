@@ -5,7 +5,7 @@ import {
 	Parameters,
 	ParsedToken,
 	ParsedType,
-	ParsedVariableDeclaration,
+	VariableDeclaration,
 	Returns
 } from "../../types";
 import { FuncbodyContext, FunctionParametersContext, FunctionParametersTypeContext, FunctionReturnsContext } from "../LuauGrammar/LuauParser";
@@ -206,7 +206,7 @@ export function buildFunction(functionBody: FuncbodyContext, AST?: AST): Functio
 	return parsedFunction;
 }
 
-export function createFunctionPlaceholder(): [ParsedVariableDeclaration, FunctionType] {
+export function createFunctionPlaceholder(): [VariableDeclaration, FunctionType] {
 	const functionType: FunctionType = {
 		Type: "Function",
 		RawValue: "",
@@ -218,7 +218,7 @@ export function createFunctionPlaceholder(): [ParsedVariableDeclaration, Functio
 			Tokens: [],
 		},
 	};
-	const variable: ParsedVariableDeclaration = {
+	const variable: VariableDeclaration = {
 		Type: "Variable Declaration",
 		RawValue: "",
 		VariableName: "",

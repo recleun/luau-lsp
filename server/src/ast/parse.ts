@@ -5,7 +5,7 @@ import {
 	NormalizedExpressions,
 	NormalizedNames,
 	ParsedToken,
-	ParsedVariableDeclaration,
+	VariableDeclaration,
 } from "../types";
 import {
 	ForExpressionContext,
@@ -173,7 +173,7 @@ class Listener implements LuauListener {
 
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 
-		const variable = parsedToken as ParsedVariableDeclaration;
+		const variable = parsedToken as VariableDeclaration;
 		variable.VariableName = ctx.funcname().text;
 		variable.VariableValue = {
 			Type: "Value",
@@ -210,7 +210,7 @@ class Listener implements LuauListener {
 		const variable = setNodeEnds(
 			currentAst.Tokens[currentAst.Tokens.length - 1],
 			ctx
-		) as ParsedVariableDeclaration;
+		) as VariableDeclaration;
 		variable.VariableName = ctx.NAME().text;
 		variable.VariableValue = {
 			Type: "Value",
@@ -250,7 +250,7 @@ class Listener implements LuauListener {
 				RawValue: "nil",
 			};
 			const type = values[i]?.Type ?? name.Type ?? value;
-			const variable: ParsedVariableDeclaration = {
+			const variable: VariableDeclaration = {
 				IsGlobal: false,
 				Type: "Variable Declaration",
 				VariableName: name.Name,

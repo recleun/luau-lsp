@@ -1,46 +1,46 @@
-import { AST, ParsedVariableDeclaration } from "../parse-types";
+import { AST, VariableDeclaration } from "../parse-types";
 import { ParsedValue, TableType } from "./possible-type";
 
 export interface Pairs {
 	Type: "Pairs",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	// Table: TableType,
 }
 
 export interface Ipairs {
 	Type: "Ipairs",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	// Table: TableType,
 }
 
 export interface Next {
 	Type: "Next",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	// Table: TableType,
 }
 
 export interface Custom {
 	Type: "Custom",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	// Table: TableType,
 }
 
 export interface Table {
 	Type: "Table",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	// Table: TableType,
 }
 
 export interface ForIn {
 	Type: "ForIn",
-	Variables: ParsedVariableDeclaration[],
+	Variables: VariableDeclaration[],
 	Body: AST,
 }
 
 export interface ForNumeric {
 	Type: "ForNumeric",
 	LoopData: {
-		Variable: ParsedVariableDeclaration,
+		Variable: VariableDeclaration,
 		Start: ParsedValue,
 		End: ParsedValue,
 		Step: ParsedValue,

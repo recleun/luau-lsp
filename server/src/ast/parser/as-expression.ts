@@ -5,7 +5,7 @@ import {
 	NormalizedExpressions,
 	ParsedType,
 	ParsedValue,
-	ParsedVariableDeclaration,
+	VariableDeclaration,
 	PossibleTypes,
 	TableFields,
 	TableKey,
@@ -293,8 +293,8 @@ export function createParsedValuePlaceHolder(): ParsedValue {
 	return value;
 }
 
-export function createVariablePlaceholder(type?: string): ParsedVariableDeclaration {
-	const variable: ParsedVariableDeclaration = {
+export function createVariablePlaceholder(type?: string): VariableDeclaration {
+	const variable: VariableDeclaration = {
 		Type: "Variable Declaration",
 		IsGlobal: false,
 		RawValue: "",
