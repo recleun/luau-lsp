@@ -4,7 +4,7 @@ import {
 	FunctionType,
 	Parameters,
 	ParsedToken,
-	ParsedType,
+	TypeDefinition,
 	VariableDeclaration,
 	Returns
 } from "../../types";
@@ -49,7 +49,7 @@ export function buildFunctionParameters(functionParameters: FunctionParametersCo
 	}
 	if (variadicParameter) {
 		const type = variadicParameter.type();
-		let parameterType: ParsedType = {
+		let parameterType: TypeDefinition = {
 			Type: "Type",
 			RawValue: "any",
 			Generics: [],
@@ -117,7 +117,7 @@ export function buildFunctionParametersType(functionParametersType: FunctionPara
 	}
 	if (variadicParameter) {
 		const type = variadicParameter.type();
-		let parameterType: ParsedType = {
+		let parameterType: TypeDefinition = {
 			Type: "Type",
 			RawValue: "any",
 			Generics: [],

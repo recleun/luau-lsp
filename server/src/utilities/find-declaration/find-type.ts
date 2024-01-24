@@ -1,8 +1,8 @@
-import { AST, ParsedType } from "../../types";
+import { AST, TypeDefinition } from "../../types";
 import { addDiagnostic, getCurrentUri } from "../../diagnostics";
 import { DiagnosticSeverity, Range } from "vscode-languageserver";
 
-export function findType(typeName: string, AST: AST, exported: boolean, currentLocation: Range): ParsedType | undefined {
+export function findType(typeName: string, AST: AST, exported: boolean, currentLocation: Range): TypeDefinition | undefined {
 	for (let i = 0; i < AST.Tokens.length; i++) {
 		const element = AST.Tokens[i];
 		if (element.Type !== "Type") { continue; }

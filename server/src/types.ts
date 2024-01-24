@@ -1,5 +1,5 @@
 import {
-	ParsedType,
+	TypeDefinition,
 	ParsedValue,
 	Parameters,
 	Returns,
@@ -13,7 +13,7 @@ export type ConvertableTypes = Parameters
 	| TableField
 	| TableFields
 	| ParsedValue
-	| ParsedType
+	| TypeDefinition
 	| string
 
 export interface NormalizedExpression {

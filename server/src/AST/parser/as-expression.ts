@@ -3,7 +3,7 @@ import {
 	AST,
 	Fix,
 	NormalizedExpressions,
-	ParsedType,
+	TypeDefinition,
 	ParsedValue,
 	VariableDeclaration,
 	PossibleTypes,

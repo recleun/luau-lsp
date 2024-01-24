@@ -1,13 +1,13 @@
 import { Position, Range, URI } from "vscode-languageserver";
 import { IfStatement } from "./parse-types";
 import { ForLoop } from "./parse/for-loops";
-import { ParsedType, ParsedValue } from "./parse/possible-type";
+import { TypeDefinition, ParsedValue } from "./parse/possible-type";
 
 export interface VariableDeclaration {
 	Type: "Variable Declaration",
 	VariableName: string,
 	IsGlobal: boolean,
-	VariableType: ParsedType,
+	VariableType: TypeDefinition,
 	VariableValue: ParsedValue,
 	RawValue: string,
 	References: Reference[],
@@ -26,7 +26,7 @@ export interface ASTNode {
 
 export type PossibleTokens =
 	VariableDeclaration |
-	ParsedType |
+	TypeDefinition |
 	ForLoop |
 	IfStatement
 

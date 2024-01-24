@@ -1,5 +1,5 @@
-import { ParsedType } from "../../types";
+import { TypeDefinition } from "../../types";
 
-export function isParsedType(obj: any): obj is ParsedType {
+export function isParsedType(obj: any): obj is TypeDefinition {
 	return typeof obj.Type === "string" && obj.Type === "Type";
 }

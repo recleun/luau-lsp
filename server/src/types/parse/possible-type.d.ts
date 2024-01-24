@@ -10,7 +10,7 @@ export interface TableField extends TableFieldBase {
 	Type: PossibleTypes,
 }
 export interface TableFieldType extends TableFieldBase {
-	Value: ParsedType,
+	Value: TypeDefinition,
 }
 
 export interface SimpleType {
@@ -30,7 +30,7 @@ export interface FunctionType {
 	Body: AST
 }
 
-export type TableKey = ParsedType | ParsedValue | string
+export type TableKey = TypeDefinition | ParsedValue | string
 export type PossibleTypes = SimpleType | TableType | FunctionType
 
 export interface Generic {
@@ -40,11 +40,11 @@ export interface Generic {
 
 export interface Type {
 	Type: PossibleTypes,
-	AndTypes: ParsedType[],
-	OrTypes: ParsedType[],
+	AndTypes: TypeDefinition[],
+	OrTypes: TypeDefinition[],
 }
 
-export interface ParsedType {
+export interface TypeDefinition {
 	Type: "Type",
 	TypeName: string,
 	TypeValue: Type,

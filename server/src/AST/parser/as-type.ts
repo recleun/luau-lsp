@@ -4,7 +4,7 @@ import {
 	DiagnosticData,
 	FunctionType,
 	Generic,
-	ParsedType,
+	TypeDefinition,
 	ParsedValue,
 	PossibleTypes,
 	TableFields
@@ -252,7 +252,7 @@ export function handleGenerics(list: GenericTypeListContext): Generic[] {
 	return generics;
 }
 
-export function asSimpleType(type: SimpleTypeContext): ParsedType {
+export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 	let functionType;
 	let tableType;
 	let nestedType;
@@ -268,7 +268,7 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 			},
 			RawValue: "",
 		};
-		const parsedType: ParsedType = {
+		const parsedType: TypeDefinition = {
 			Type: "Type",
 			TypeName: "",
 			RawValue: "",
@@ -351,7 +351,7 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 		}
 
 		const rawValue = toString(tableFields, ": ");
-		const parsedType: ParsedType = {
+		const parsedType: TypeDefinition = {
 			Type: "Type",
 			TypeName: "",
 			RawValue: rawValue,
@@ -392,7 +392,7 @@ export function asSimpleType(type: SimpleTypeContext): ParsedType {
 	// TODO: Continue the rest.
 }
 
-export function asType(typeContext: TypeContext): ParsedType {
+export function asType(typeContext: TypeContext): TypeDefinition {
 	const type = asSimpleType(typeContext.simpleType());
 	const union = typeContext.unionSuffix();
 	const intersection = typeContext.intersectionSuffix();
@@ -411,7 +411,7 @@ export function asType(typeContext: TypeContext): ParsedType {
 	return type;
 }
 
-export function asTypeList(typeList: TypeListContext): ParsedType[] {
+export function asTypeList(typeList: TypeListContext): TypeDefinition[] {
 	const types = [asType(typeList.type())];
 	const list = typeList.typeList();
 	if (list) {

@@ -1,5 +1,5 @@
 import { isParsedType, isParsedValue, log, logTable, toString } from "../../utilities";
-import { AST, ForIn, ForNumeric, ParsedTokens, ParsedType, VariableDeclaration, PossibleTypes, TableType } from "../../types";
+import { AST, ForIn, ForNumeric, ParsedTokens, TypeDefinition, VariableDeclaration, PossibleTypes, TableType } from "../../types";
 import { globals } from "../env";
 import { ForExpressionContext, ForInExpressionContext } from "../LuauGrammar/LuauParser";
 import { buildTable, createParsedValuePlaceHolder, createVariablePlaceholder, normalizeExpression, normalizeExpression1 } from "./as-expression";

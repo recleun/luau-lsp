@@ -1,17 +1,17 @@
 import { CustomArray } from "../global-types";
-import { ParsedType } from "./possible-type";
+import { TypeDefinition } from "./possible-type";
 
 export interface Parameter {
 	Type: "FunctionParameter",
 	Name: string,
-	ParameterType: ParsedType,
+	ParameterType: TypeDefinition,
 	Optional: boolean,
 	IsVariadic: boolean,
 }
 
 export interface Return {
 	Type: "FunctionReturn",
-	ReturnType: ParsedType,
+	ReturnType: TypeDefinition,
 	Optional: boolean,
 	IsVariadic: boolean,
 }
