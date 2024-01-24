@@ -3,7 +3,7 @@ import {
 	AST,
 	FunctionType,
 	Parameters,
-	ParsedToken,
+	AstToken,
 	TypeDefinition,
 	VariableDeclaration,
 	Returns

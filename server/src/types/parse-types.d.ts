@@ -30,11 +30,11 @@ export type PossibleTokens =
 	ForLoop |
 	IfStatement
 
-export type ParsedToken = ASTNode & PossibleTokens
+export type AstToken = ASTNode & PossibleTokens
 
-export type ParsedTokens = ParsedToken[];
+export type AstTokens = AstToken[];
 export interface AST {
-	Tokens: ParsedTokens,
+	Tokens: AstTokens,
 	Uri?: URI,
 	Parent?: AST,
 }

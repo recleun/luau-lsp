@@ -1,7 +1,7 @@
 import { functionTypeToString } from "../utilities/to-string/function-type-to-string";
 import {
 	Parameters,
-	ParsedTokens,
+	AstTokens,
 	Value,
 	VariableDeclaration,
 	PossibleTypes,
@@ -212,8 +212,8 @@ DataTypesJson.Constructors.forEach(constructor => {
 	});
 });
 
-const globals: ParsedTokens = [];
-const metatables: ParsedTokens = [];
+const globals: AstTokens = [];
+const metatables: AstTokens = [];
 
 readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err, code) => {
 	if (err) throw err;

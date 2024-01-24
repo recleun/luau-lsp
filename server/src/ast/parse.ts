@@ -4,7 +4,7 @@ import {
 	ForNumeric,
 	NormalizedExpressions,
 	NormalizedNames,
-	ParsedToken,
+	AstToken,
 	VariableDeclaration,
 } from "../types";
 import {
@@ -44,7 +44,7 @@ import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserList
 
 let currentAst: AST;
 
-function setNodeEnds(token: ParsedToken, context: ParserRuleContext): ParsedToken {
+function setNodeEnds(token: AstToken, context: ParserRuleContext): AstToken {
 	token.Start = Position.create(context.start.line - 1, context.start.charPositionInLine);
 	token.End = getEnd(context.text, token.Start);
 
