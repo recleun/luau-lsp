@@ -3,14 +3,13 @@ import { IfStatement } from "./parse-types";
 import { ForLoop } from "./parse/for-loops";
 import { TypeDefinition, Value } from "./parse/possible-type";
 
-export interface VariableDeclaration {
+export interface VariableDeclaration extends Referenceable {
 	Type: "Variable Declaration",
 	VariableName: string,
 	IsGlobal: boolean,
 	VariableType: TypeDefinition,
 	VariableValue: Value,
 	RawValue: string,
-	References: Reference[],
 }
 
 export interface Reference {
@@ -23,6 +22,10 @@ export interface ASTNode {
 	Start?: Position,
 	End?: Position,
 }
+export interface Referenceable {
+	References: Reference[],
+}
+export type ReferenceableASTNode = ASTNode & Referenceable
 
 export type PossibleTokens =
 	VariableDeclaration |

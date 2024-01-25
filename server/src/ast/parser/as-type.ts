@@ -21,6 +21,7 @@ import {
 	buildFunctionReturns
 } from "./as-function";
 import { DiagnosticSeverity, LSPAny } from "vscode-languageserver";
+import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder } from "../../classes";
 
 interface ErrorMessage {
 	Text: string,
@@ -257,34 +258,11 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 	let tableType;
 	let nestedType;
 	if ((functionType = type.functionType())) {
-		const type: FunctionType = {
-			Type: "Function",
-			Body: {
-				Tokens: [],
-			},
-			Value: {
-				Parameters: buildFunctionParametersType(functionType.functionParametersType()),
-				Returns: buildFunctionReturns(functionType.functionReturns()),
-			},
-			RawValue: "",
-		};
-		const parsedType: TypeDefinition = {
-			Type: "Type",
-			TypeName: "",
-			RawValue: "",
-			IsExported: false,
-			TypeValue: {
-				Type: type,
-				AndTypes: [],
-				OrTypes: [],
-			},
-			Generics: [],
-		};
-		const rawValue = functionTypeToString(type);
-
-		parsedType.RawValue = rawValue;
-		type.RawValue = rawValue;
-
+		const type: FunctionType = PossibleTypesBuilder.asFunction(
+			buildFunctionParametersType(functionType.functionParametersType()),
+			buildFunctionReturns(functionType.functionReturns()),
+		);
+		const parsedType: TypeDefinition = TypeDefinitionBuilder.fromPossibleType(type);
 		const list = functionType.genericTypeList();
 		if (list) {
 			parsedType.Generics = handleGenerics(list);
@@ -300,14 +278,7 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 		let fields;
 		if ((type = tableType.type())) {
 			tableFields.push({
-				Key: {
-					Type: "Value",
-					Value: {
-						Type: "Simple",
-						RawValue: "number",
-						Value: "number",
-					},
-				},
+				Key: ValueBuilder.fromString("string"),
 				Value: asType(type),
 				References: [],
 			});
@@ -327,22 +298,7 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 					const key = tableProperty.NAME().text;
 
 					tableFields.push({
-						Key: {
-							Type: "Type",
-							TypeName: "",
-							RawValue: key,
-							IsExported: false,
-							TypeValue: {
-								Type: {
-									Type: "Simple",
-									RawValue: key,
-									Value: key,
-								},
-								AndTypes: [],
-								OrTypes: [],
-							},
-							Generics: [],
-						},
+						Key: TypeDefinitionBuilder.fromString(key),
 						Value: asType(tableProperty.type()),
 						References: [],
 					});
@@ -351,43 +307,15 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 		}
 
 		const rawValue = toString(tableFields, ": ");
-		const parsedType: TypeDefinition = {
-			Type: "Type",
-			TypeName: "",
-			RawValue: rawValue,
-			IsExported: false,
-			TypeValue: {
-				Type: {
-					Type: "Table",
-					RawValue: rawValue,
-					Value: tableFields,
-				},
-				AndTypes: [],
-				OrTypes: [],
-			},
-			Generics: [],
-		};
 
-		return parsedType;
+		return TypeDefinitionBuilder.fromPossibleType(
+			PossibleTypesBuilder.asTable(tableFields, rawValue)
+		);
 	} else if ((nestedType = type.type())) {
 		return asType(nestedType);
+
 	} else {
-		return {
-			Type: "Type",
-			RawValue: type.text,
-			TypeName: "",
-			IsExported: false,
-			TypeValue: {
-				Type: {
-					Type: "Simple",
-					RawValue: type.text,
-					Value: type.text,
-				},
-				AndTypes: [],
-				OrTypes: [],
-			},
-			Generics: [],
-		};
+		return TypeDefinitionBuilder.fromString(type.text);
 	}
 	// TODO: Continue the rest.
 }

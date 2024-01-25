@@ -1,9 +1,8 @@
 import { CustomArray } from "../global-types";
-import { AST, ASTNode, Parameters, Reference, Returns } from "../parse-types";
+import { AST, Parameters, ReferenceableASTNode, Referenceable, Returns } from "../parse-types";
 
-interface TableFieldBase extends ASTNode {
+interface TableFieldBase extends ReferenceableASTNode {
 	Key: TableKey,
-	References: Reference[],
 }
 export interface TableField extends TableFieldBase {
 	Value: PossibleTypes,
@@ -44,14 +43,13 @@ export interface Type {
 	OrTypes: TypeDefinition[],
 }
 
-export interface TypeDefinition {
+export interface TypeDefinition extends Referenceable {
 	Type: "Type",
 	TypeName: string,
 	TypeValue: Type,
 	RawValue: string,
 	IsExported: boolean,
 	Generics: Generic[],
-	References?: Reference[],
 }
 
 export interface Value {
