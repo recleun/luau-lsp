@@ -14,15 +14,14 @@ export function isInBounds(start: Position, end: Position, position: Position): 
 		);
 }
 
-type NodeLocation = Range;
-type ReferenceLocation = Range;
-type VariableData = [
-	VariableDeclaration | TableField | TableFieldType,
-	NodeLocation,
-	string,
-	ReferenceLocation,
-	Reference[]
-]
+interface VariableData {
+	Node: VariableDeclaration | TableField | TableFieldType,
+	NodeLocation: Range,
+	NodeNameLocation: Range,
+	RawValue: string,
+	ReferenceLocation: Range,
+	References: Reference[],
+}
 
 export function getVariableAtPosition(position: Position, ast: AST): VariableData | undefined {
 	for (const node of ast.Tokens) {
@@ -34,6 +33,9 @@ export function getVariableAtPosition(position: Position, ast: AST): VariableDat
 		if (!isHere) {
 			if (node.Type === "Variable Declaration") {
 				for (const reference of node.References) {
+					if (!node.NameStart || !node.NameEnd) {
+						continue;
+					}
 					if (reference.FileUri !== getCurrentUri()) {
 						continue;
 					}
@@ -41,18 +43,22 @@ export function getVariableAtPosition(position: Position, ast: AST): VariableDat
 						continue;
 					}
 
-					return [
-						node,
-						Range.create(node.Start, node.End),
-						node.RawValue,
-						Range.create(reference.Start, reference.End),
-						node.References,
-					];
+					return {
+						Node: node,
+						NodeLocation: Range.create(node.Start, node.End),
+						NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+						RawValue: node.RawValue,
+						ReferenceLocation: Range.create(reference.Start, reference.End),
+						References: node.References,
+					};
 				}
 
 				if (node.VariableType.TypeValue.Type.Type === "Table") {
 					for (const field of node.VariableType.TypeValue.Type.Value) {
 						for (const reference of field.References) {
+							if (!field.NameStart || !field.NameEnd) {
+								continue;
+							}
 							if (reference.FileUri !== getCurrentUri()) {
 								continue;
 							}
@@ -61,13 +67,14 @@ export function getVariableAtPosition(position: Position, ast: AST): VariableDat
 							}
 
 
-							return [
-								field,
-								Range.create(field.Start!, field.End!),
-								field.Value.RawValue,
-								Range.create(reference.Start, reference.End),
-								field.References,
-							];
+							return {
+								Node: field,
+								NodeLocation: Range.create(field.Start!, field.End!),
+								NodeNameLocation: Range.create(field.NameStart, field.NameEnd),
+								RawValue: field.Value.RawValue,
+								ReferenceLocation: Range.create(reference.Start, reference.End),
+								References: field.References,
+							};
 						}
 					}
 
@@ -79,47 +86,57 @@ export function getVariableAtPosition(position: Position, ast: AST): VariableDat
 		}
 
 		if (node.Type === "Variable Declaration") {
-			if (node.VariableValue.Value.Type === "Function") {
+			if (!node.NameStart || !node.NameEnd) {
+				continue;
+			}
 
-				return getVariableAtPosition(position, node.VariableValue.Value.Body) || [
-					node,
-					Range.create(node.Start, node.End),
-					node.RawValue,
-					Range.create(node.Start, node.End),
-					node.References,
-				];
+			if (node.VariableValue.Value.Type === "Function") {
+				return getVariableAtPosition(position, node.VariableValue.Value.Body) || {
+					Node: node,
+					NodeLocation: Range.create(node.Start, node.End),
+					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+					RawValue: node.RawValue,
+					ReferenceLocation: Range.create(node.Start, node.End),
+					References: node.References,
+				};
 			} else if (node.VariableType.TypeValue.Type.Type === "Table") {
 				for (const field of node.VariableType.TypeValue.Type.Value) {
 					if (!field.Start || !field.End) {
 						continue;
 					}
+					if (!field.NameStart || !field.NameEnd) {
+						continue;
+					}
 
 					if (isInBounds(field.Start, field.End, position)) {
-						return [
-							field,
-							Range.create(node.Start, node.End),
-							tableFieldToString(field, " = ", false),
-							Range.create(field.Start, field.End),
-							field.References,
-						];
+						return {
+							Node: field,
+							NodeLocation: Range.create(node.Start, node.End),
+							NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+							RawValue: tableFieldToString(field, " = ", false),
+							ReferenceLocation: Range.create(field.Start, field.End),
+							References: field.References,
+						};
 					}
 				}
 
-				return [
-					node,
-					Range.create(node.Start, node.End),
-					node.RawValue,
-					Range.create(node.Start, node.End),
-					node.References,
-				];
+				return {
+					Node: node,
+					NodeLocation: Range.create(node.Start, node.End),
+					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+					RawValue: node.RawValue,
+					ReferenceLocation: Range.create(node.Start, node.End),
+					References: node.References,
+				};
 			} else {
-				return [
-					node,
-					Range.create(node.Start, node.End),
-					node.RawValue,
-					Range.create(node.Start, node.End),
-					node.References,
-				];
+				return {
+					Node: node,
+					NodeLocation: Range.create(node.Start, node.End),
+					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+					RawValue: node.RawValue,
+					ReferenceLocation: Range.create(node.Start, node.End),
+					References: node.References,
+				};
 			}
 		}
 
@@ -141,8 +158,8 @@ export function onDefinition(params: DefinitionParams): DefinitionLink[] {
 		return definitions;
 	}
 
-	if (isInBounds(result[1].start, result[1].end, params.position)) {
-		result[4].forEach((reference) => {
+	if (isInBounds(result.NodeLocation.start, result.NodeLocation.end, params.position)) {
+		result.References.forEach((reference) => {
 			const referenceLocation = Range.create(reference.Start, reference.End);
 
 			definitions.push({
@@ -154,9 +171,9 @@ export function onDefinition(params: DefinitionParams): DefinitionLink[] {
 		});
 	} else {
 		definitions.push({
-			targetRange: result[1],
+			targetRange: result.NodeLocation,
 			targetUri: params.textDocument.uri,
-			targetSelectionRange: result[1],
+			targetSelectionRange: result.NodeNameLocation,
 		});
 	}
 

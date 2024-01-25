@@ -17,8 +17,8 @@ export function onHover(hoverParams: HoverParams): Hover | undefined {
 	return {
 		contents: {
 			kind: MarkupKind.Markdown,
-			value: wrapInCodeBlocks(result[2]),
+			value: wrapInCodeBlocks(result.RawValue),
 		},
-		range: result[3],
+		range: result.ReferenceLocation,
 	};
 }
