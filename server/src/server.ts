@@ -33,6 +33,7 @@ import { log, logTable, setup, tableFieldToString, wrapInCodeBlocks } from "./ut
 import { AST } from "./types";
 import { onHover } from "./hover";
 import { onDefinition } from "./definition";
+import { onRename } from "./rename";
 
 const connection = createConnection(ProposedFeatures.all);
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
@@ -75,6 +76,7 @@ connection.onInitialize((params: InitializeParams) => {
 			hoverProvider: true,
 			codeActionProvider: true,
 			definitionProvider: true,
+			renameProvider: true,
 			//TODO complete the rest.
 
 		}
@@ -218,6 +220,7 @@ connection.onCompletionResolve((item: CompletionItem) => item);
 connection.onHover((hoverParams: HoverParams) => onHover(hoverParams));
 connection.onCodeActionResolve(codeAction => codeAction);
 connection.onDefinition((definitionParams: DefinitionParams) => onDefinition(definitionParams));
+connection.onRenameRequest((renameParams: RenameParams) => onRename(renameParams));
 documents.onDidClose(e => documentSettings.delete(e.document.uri));
 
 connection.onInitialized(() => {
