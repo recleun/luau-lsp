@@ -20,8 +20,9 @@ import {
 	buildFunctionParametersType,
 	buildFunctionReturns
 } from "./as-function";
-import { DiagnosticSeverity, LSPAny } from "vscode-languageserver";
+import { DiagnosticSeverity, LSPAny, Position, Range } from "vscode-languageserver";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder } from "../../classes";
+import { getEnd } from "./as-expression";
 
 interface ErrorMessage {
 	Text: string,
@@ -288,19 +289,29 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 				let fieldIndexer;
 				let tableProperty;
 				if ((fieldIndexer = property.tableIndexer())) {
+					const key = fieldIndexer.type(0);
+					const start = Position.create(property.start.line, property.start.channel);
+					const location = Range.create(start, getEnd(key.text, start));
+
 					tableFields.push({
-						Key: asType(fieldIndexer.type(0)),
+						Key: asType(key),
 						Value: asType(fieldIndexer.type(1)),
 						References: [],
+						NameStart: location.start,
+						NameEnd: location.end,
 					});
 
 				} else if ((tableProperty = property.tableProperty())) {
 					const key = tableProperty.NAME().text;
+					const start = Position.create(property.start.line, property.start.channel);
+					const location = Range.create(start, getEnd(key, start));
 
 					tableFields.push({
 						Key: TypeDefinitionBuilder.fromString(key),
 						Value: asType(tableProperty.type()),
 						References: [],
+						NameStart: location.start,
+						NameEnd: location.end,
 					});
 				}
 			});

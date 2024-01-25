@@ -76,23 +76,24 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 		const start = Position.create(field.start.line - 1, field.start.charPositionInLine);
 		const end = getEnd(field.text, start);
 		const location: Range = Range.create(start, end);
+		let keyLocation: Range;
 
 		const expressions = field.expression();
 		const name = field.NAME();
 		if (name) {
 			// a = <expression>
+			keyLocation = Range.create(start, getEnd(name.text, start));
 			key = name.text;
 
 		} else if (field.CLOSE_SQUARE_BRACKETS()) {
 			// [<expression>] = <expression>
 			const expression = expressions.shift();
-			if (expression) {
-				const value = normalizeExpression([expression], AST)[0].Value;
-				key = {
-					Type: "Value",
-					Value: value,
-				};
-			}
+			const value = normalizeExpression([expression!], AST)[0].Value;
+			key = {
+				Type: "Value",
+				Value: value,
+			};
+			keyLocation = Range.create(start, getEnd(expression!.text, start));
 
 		} else {
 			// <expression>
@@ -100,6 +101,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 				index++;
 			}
 
+			keyLocation = Range.create(start, start);
 			key = String(index);
 			index++;
 		}
@@ -140,7 +142,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 				},
 			});
 
-			return;
+			// return;
 		}
 		usedIndices.push(key);
 
@@ -153,6 +155,8 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 			References: [],
 			Start: location.start,
 			End: location.end,
+			NameStart: keyLocation.start,
+			NameEnd: keyLocation.end,
 		});
 	});
 	parsedTable.RawValue = tableFieldsToString(tableFields, " = ");

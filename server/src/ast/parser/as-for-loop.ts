@@ -2,10 +2,11 @@ import { isParsedType, isParsedValue } from "../../utilities";
 import { AST, ForIn, ForNumeric, VariableDeclaration, PossibleTypes, TableType } from "../../types";
 import { globals } from "../env";
 import { ForExpressionContext, ForInExpressionContext } from "../LuauGrammar/LuauParser";
-import { buildTable, normalizeExpression, normalizeExpression1 } from "./as-expression";
+import { buildTable, getEnd, normalizeExpression, normalizeExpression1 } from "./as-expression";
 import { normalizeAllNamesList } from "./as-names";
 import { areEqual } from "./as-type";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../../classes";
+import { Position } from "vscode-languageserver";
 
 function getTypesFromTable(value: TableType, index: number) {
 	const variableTypes: PossibleTypes[] = [];
@@ -130,16 +131,32 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 		}
 	}
 
+	const allNamesList = forInExpression.allNamesList();
+	const separatedNames = allNamesList.text.split(",");
+
 	let i = 0;
-	normalizeAllNamesList(forInExpression.allNamesList()).forEach(name => {
+	let character = allNamesList.start.charPositionInLine;
+	let line = allNamesList.start.line - 1;
+	normalizeAllNamesList(allNamesList).forEach(name => {
 		const type = name.Type ?? variableTypes[i] ?? PossibleTypesBuilder.asSimple("any");
-		variables.push(VariableDeclarationBuilder.create(
+		const variable = VariableDeclarationBuilder.create(
 			name.Name,
 			false,
 			TypeDefinitionBuilder.fromPossibleType(type),
 			ValueBuilder.fromPossibleType(type),
 			`${name.Name}: ${type.RawValue}`,
-		));
+		);
+		variable.NameStart = Position.create(line, character);
+		variable.NameEnd = getEnd(separatedNames[i], variable.NameStart);
+
+		variables.push(variable);
+
+		if (separatedNames[i].includes("\n")) {
+			line++;
+			character = 0;
+		} else {
+			character += separatedNames[i].trim().length;
+		}
 
 		i += 1;
 	});

@@ -24,6 +24,8 @@ export interface ASTNode {
 }
 export interface Referenceable {
 	References: Reference[],
+	NameStart?: Position,
+	NameEnd?: Position,
 }
 export type ReferenceableASTNode = ASTNode & Referenceable
 

@@ -171,14 +171,23 @@ class Listener implements LuauListener {
 
 		const functionData = buildFunction(ctx.funcbody(), currentAst);
 		currentAst = currentAst.Parent!;
+		const name = ctx.funcname();
+		const start = getEnd(
+			ctx.FUNCTION().text,
+			Position.create(ctx.start.line - 1, ctx.start.charPositionInLine)
+		);
+		const end = getEnd(name.text, start);
 
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 
+		//TODO: Change `VariableName` and add it to a field in a table (if needed).
 		const variable = parsedToken as VariableDeclaration;
 		variable.VariableName = ctx.funcname().text;
 		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
 		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
+		variable.NameStart = start;
+		variable.NameEnd = end;
 	}
 
 	enterLocalFunction(ctx: LocalFunctionContext) {
@@ -194,18 +203,30 @@ class Listener implements LuauListener {
 		const functionData = buildFunction(ctx.funcbody(), currentAst);
 		currentAst = currentAst.Parent!;
 
+		const name = ctx.NAME();
+		const start = getEnd(
+			`${ctx.LOCAL().text}${ctx.FUNCTION().text}`,
+			Position.create(ctx.start.line - 1, ctx.start.charPositionInLine)
+		);
+		const end = getEnd(name.text, start);
+
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		const variable = parsedToken as VariableDeclaration;
 		variable.VariableName = ctx.NAME().text;
 		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
 		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
+		variable.NameStart = start;
+		variable.NameEnd = end;
 	}
 
 	exitVariableDeclaration(ctx: VariableDeclarationContext) {
 		if (ctx.exception) { return; }
 
-		const names: NormalizedNames = normalizeAllNamesList(ctx.allNamesList());
+		const allNamesList = ctx.allNamesList();
+		const names: NormalizedNames = normalizeAllNamesList(allNamesList);
+		const separatedNames = allNamesList.text.split(",");
+
 		const expressions = ctx.expressionList();
 		let values: NormalizedExpressions = [];
 
@@ -214,6 +235,8 @@ class Listener implements LuauListener {
 		}
 
 		let i = 0;
+		let character = allNamesList.start.charPositionInLine;
+		let line = allNamesList.start.line - 1;
 		names.forEach(name => {
 			const value = values[i]?.Value ?? ValueBuilder.fromString("nil");
 			const type = values[i]?.Type ?? name.Type ?? value;
@@ -224,6 +247,8 @@ class Listener implements LuauListener {
 				ValueBuilder.fromPossibleType(value),
 				`local ${name.Name}`,
 			);
+			variable.NameStart = Position.create(line, character);
+			variable.NameEnd = getEnd(separatedNames[i], variable.NameStart);
 
 			if (variable.VariableValue.Value.RawValue !== "") {
 				variable.RawValue += ` = ${variable.VariableValue.Value.RawValue}`;
@@ -231,6 +256,12 @@ class Listener implements LuauListener {
 				variable.RawValue += `: ${variable.VariableType.RawValue}`;
 			}
 
+			if (separatedNames[i].includes("\n")) {
+				line++;
+				character = 0;
+			} else {
+				character += separatedNames[i].trim().length;
+			}
 			i += 1;
 			currentAst.Tokens.push(setNodeEnds(variable, ctx));
 		});
