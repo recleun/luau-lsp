@@ -164,7 +164,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 	return parsedTable;
 }
 
-export function normalizeExpression1(expressions: Expression1Context[], AST: AST): NormalizedExpressions {
+export function normalizeExpression1(expressions: Expression1Context[], ast: AST): NormalizedExpressions {
 	const normalizedExpressions: NormalizedExpressions = [];
 
 	expressions.forEach(expression => {
@@ -176,11 +176,11 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 
 		if ((table = expression.tableconstructor())) {
 			normalizedExpressions.push({
-				Value: buildTable(table, AST)
+				Value: buildTable(table, ast)
 			});
 		} else if ((functionContext = expression.function())) {
 			normalizedExpressions.push({
-				Value: buildFunction(functionContext.funcbody())
+				Value: buildFunction(functionContext.funcbody(), ast)
 			});
 		} /* else if ((string = expression.STRING())) {
 			normalizedExpressions.push({
@@ -209,7 +209,7 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 				},
 			});
 		} */ else if ((prefixExp = expression.prefixexp())) {
-			const [value, type] = handlePrefixExp(AST, prefixExp);
+			const [value, type] = handlePrefixExp(ast, prefixExp);
 
 			normalizedExpressions.push({
 				Value: value,
@@ -251,16 +251,16 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 	return normalizedExpressions;
 }
 
-export function normalizeExpression(expressions: ExpressionContext[], AST: AST): NormalizedExpressions {
+export function normalizeExpression(expressions: ExpressionContext[], ast: AST): NormalizedExpressions {
 	const normalizedExpressions: NormalizedExpressions = [];
 
 	expressions.forEach(expression => {
 		const expression1 = expression.expression1();
-		const normalizeExpression = normalizeExpression1([expression1], AST)[0];
+		const normalizeExpression = normalizeExpression1([expression1], ast)[0];
 
 		let type;
 		if ((type = expression.type())) {
-			normalizeExpression.Type = asType(type).TypeValue.Type;
+			normalizeExpression.Type = asType(type, ast).TypeValue.Type;
 		}
 
 		normalizedExpressions.push(normalizeExpression);

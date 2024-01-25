@@ -224,7 +224,7 @@ class Listener implements LuauListener {
 		if (ctx.exception) { return; }
 
 		const allNamesList = ctx.allNamesList();
-		const names: NormalizedNames = normalizeAllNamesList(allNamesList);
+		const names: NormalizedNames = normalizeAllNamesList(allNamesList, currentAst);
 		const separatedNames = allNamesList.text.split(",");
 
 		const expressions = ctx.expressionList();
@@ -271,7 +271,7 @@ class Listener implements LuauListener {
 	exitTypeDeclaration(ctx: TypeDeclarationContext) {
 		if (ctx.exception) { return; }
 
-		const type = asType(ctx.type());
+		const type = asType(ctx.type(), currentAst);
 		type.TypeName = ctx.NAME().text;
 		type.RawValue = `type ${type.TypeName} = ${type.RawValue}`;
 		type.IsExported = ctx.EXPORT() !== undefined;

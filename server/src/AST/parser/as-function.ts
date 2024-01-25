@@ -15,7 +15,7 @@ import { normalizeAllNamesList, normalizeAllNamesListType } from "./as-names";
 import { asType, asTypeList } from "./as-type";
 import { AstBuilder, PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../../classes";
 
-export function buildFunctionParameters(functionParameters: FunctionParametersContext): Parameters {
+export function buildFunctionParameters(functionParameters: FunctionParametersContext, ast: AST): Parameters {
 	const parameters: Parameters = [];
 	parameters.Content = "Parameters";
 
@@ -24,7 +24,7 @@ export function buildFunctionParameters(functionParameters: FunctionParametersCo
 	const variadicParameter = parametersList?.variadicParameter();
 
 	if (parametersNameList) {
-		normalizeAllNamesList(parametersNameList).forEach(normalizedName => {
+		normalizeAllNamesList(parametersNameList, ast).forEach(normalizedName => {
 			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
 			parameters.push({
 				Type: "FunctionParameter",
@@ -44,14 +44,14 @@ export function buildFunctionParameters(functionParameters: FunctionParametersCo
 			Name: "",
 			IsVariadic: true,
 			Optional: true,
-			ParameterType: type ? asType(type) : TypeDefinitionBuilder.default(),
+			ParameterType: type ? asType(type, ast) : TypeDefinitionBuilder.default(),
 		});
 	}
 
 	return parameters;
 }
 
-export function buildFunctionParametersType(functionParametersType: FunctionParametersTypeContext): Parameters {
+export function buildFunctionParametersType(functionParametersType: FunctionParametersTypeContext, ast: AST): Parameters {
 	const parameters: Parameters = [];
 	parameters.Content = "Parameters";
 
@@ -60,7 +60,7 @@ export function buildFunctionParametersType(functionParametersType: FunctionPara
 	const variadicParameter = parametersList?.variadicParameterType();
 
 	if (parametersNameList) {
-		normalizeAllNamesListType(parametersNameList).forEach(normalizedName => {
+		normalizeAllNamesListType(parametersNameList, ast).forEach(normalizedName => {
 			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
 			parameters.push({
 				Type: "FunctionParameter",
@@ -78,14 +78,14 @@ export function buildFunctionParametersType(functionParametersType: FunctionPara
 			Name: "",
 			IsVariadic: true,
 			Optional: true,
-			ParameterType: asType(variadicParameter.type()),
+			ParameterType: asType(variadicParameter.type(), ast),
 		});
 	}
 
 	return parameters;
 }
 
-export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): Returns {
+export function buildFunctionReturns(ast: AST, functionReturns?: FunctionReturnsContext): Returns {
 	const returns: Returns = [];
 	returns.Content = "Returns";
 
@@ -95,7 +95,7 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 	let variadicReturn;
 
 	if (returnsNameList) {
-		asTypeList(returnsNameList).forEach(type => {
+		asTypeList(returnsNameList, ast).forEach(type => {
 			returns.push({
 				Type: "FunctionReturn",
 				IsVariadic: false,
@@ -105,7 +105,7 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 		});
 
 	} else if ((returnValue = functionReturns?.type())) {
-		const type = asType(returnValue);
+		const type = asType(returnValue, ast);
 		returns.push({
 			Type: "FunctionReturn",
 			Optional: type.RawValue.endsWith("?"),
@@ -118,18 +118,18 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 			Type: "FunctionReturn",
 			Optional: true,
 			IsVariadic: true,
-			ReturnType: asType(variadicReturn.type())
+			ReturnType: asType(variadicReturn.type(), ast)
 		});
 	}
 
 	return returns;
 }
 
-export function buildFunction(functionBody: FuncbodyContext, AST?: AST): FunctionType {
+export function buildFunction(functionBody: FuncbodyContext, ast: AST, body?: AST): FunctionType {
 	return PossibleTypesBuilder.asFunction(
-		buildFunctionParameters(functionBody.functionParameters()),
-		buildFunctionReturns(functionBody.functionReturns()),
-		AST
+		buildFunctionParameters(functionBody.functionParameters(), ast),
+		buildFunctionReturns(ast, functionBody.functionReturns()),
+		body
 	);
 }
 

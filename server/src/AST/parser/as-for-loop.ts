@@ -63,7 +63,7 @@ function mergeVariableTypes(variableTypes: PossibleTypes[], otherVariableTypes: 
 	}
 }
 
-export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionContext, loopData: ForIn): ForIn {
+export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, loopData: ForIn): ForIn {
 	const variables: VariableDeclaration[] = [];
 	const variableTypes: PossibleTypes[] = [];
 
@@ -73,11 +73,11 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 		const name = iteratorFunction.NAME().text;
 		const args = iteratorFunction.args();
 
-		const astTokens = [...currentAST.Tokens];
-		while (currentAST.Parent) {
-			currentAST = currentAST.Parent;
+		const astTokens = [...ast.Tokens];
+		while (ast.Parent) {
+			ast = ast.Parent;
 
-			astTokens.push(...currentAST.Tokens);
+			astTokens.push(...ast.Tokens);
 		}
 		const allTokens = [...globals, ...astTokens.reverse()];
 
@@ -99,7 +99,7 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 		const expression = args.expressionList()?.expression();
 		let tableConstructor;
 		if (expression) {
-			const normalizedExpression = normalizeExpression(expression, currentAST)[0];
+			const normalizedExpression = normalizeExpression(expression, ast)[0];
 			if (normalizedExpression.Value.Type === "Simple") {
 				const tableName = normalizedExpression.Value.RawValue;
 
@@ -127,7 +127,7 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 			}
 
 		} else if ((tableConstructor = args.tableconstructor())) {
-			mergeVariableTypes(variableTypes, getTypeAsTable(buildTable(tableConstructor, currentAST)));
+			mergeVariableTypes(variableTypes, getTypeAsTable(buildTable(tableConstructor, ast)));
 		}
 	}
 
@@ -137,7 +137,7 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 	let i = 0;
 	let character = allNamesList.start.charPositionInLine;
 	let line = allNamesList.start.line - 1;
-	normalizeAllNamesList(allNamesList).forEach(name => {
+	normalizeAllNamesList(allNamesList, ast).forEach(name => {
 		const type = name.Type ?? variableTypes[i] ?? PossibleTypesBuilder.asSimple("any");
 		const variable = VariableDeclarationBuilder.create(
 			name.Name,

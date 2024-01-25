@@ -1,4 +1,4 @@
-import { log, toString } from "../../utilities";
+import { findType, log, toString } from "../../utilities";
 import { functionTypeToString } from "../../utilities";
 import {
 	DiagnosticData,
@@ -7,22 +7,23 @@ import {
 	TypeDefinition,
 	Value,
 	PossibleTypes,
-	TableFields
+	TableFields,
+	AST
 } from "../../types";
 import {
 	GenericTypeListContext,
 	SimpleTypeContext,
+	SingletonTypeContext,
 	TypeContext,
 	TypeListContext
 } from "../LuauGrammar/LuauParser";
 import {
-	buildFunctionParameters,
 	buildFunctionParametersType,
 	buildFunctionReturns
 } from "./as-function";
 import { DiagnosticSeverity, LSPAny, Position, Range } from "vscode-languageserver";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder } from "../../classes";
-import { getEnd } from "./as-expression";
+import { getEnd, getLocation } from "./as-expression";
 
 interface ErrorMessage {
 	Text: string,
@@ -254,14 +255,16 @@ export function handleGenerics(list: GenericTypeListContext): Generic[] {
 	return generics;
 }
 
-export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
+export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition {
 	let functionType;
 	let tableType;
 	let nestedType;
+	let singletonType;
+	let nil;
 	if ((functionType = type.functionType())) {
 		const type: FunctionType = PossibleTypesBuilder.asFunction(
-			buildFunctionParametersType(functionType.functionParametersType()),
-			buildFunctionReturns(functionType.functionReturns()),
+			buildFunctionParametersType(functionType.functionParametersType(), ast),
+			buildFunctionReturns(ast, functionType.functionReturns()),
 		);
 		const parsedType: TypeDefinition = TypeDefinitionBuilder.fromPossibleType(type);
 		const list = functionType.genericTypeList();
@@ -280,7 +283,7 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 		if ((type = tableType.type())) {
 			tableFields.push({
 				Key: ValueBuilder.fromString("string"),
-				Value: asType(type),
+				Value: asType(type, ast),
 				References: [],
 			});
 
@@ -294,8 +297,8 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 					const location = Range.create(start, getEnd(key.text, start));
 
 					tableFields.push({
-						Key: asType(key),
-						Value: asType(fieldIndexer.type(1)),
+						Key: asType(key, ast),
+						Value: asType(fieldIndexer.type(1), ast),
 						References: [],
 						NameStart: location.start,
 						NameEnd: location.end,
@@ -308,7 +311,7 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 
 					tableFields.push({
 						Key: TypeDefinitionBuilder.fromString(key),
-						Value: asType(tableProperty.type()),
+						Value: asType(tableProperty.type(), ast),
 						References: [],
 						NameStart: location.start,
 						NameEnd: location.end,
@@ -323,38 +326,62 @@ export function asSimpleType(type: SimpleTypeContext): TypeDefinition {
 			PossibleTypesBuilder.asTable(tableFields, rawValue)
 		);
 	} else if ((nestedType = type.type())) {
-		return asType(nestedType);
+		return asType(nestedType, ast);
+
+	} else if ((singletonType = type.singletonType())) {
+		return asSingletoneType(singletonType, ast) ?? TypeDefinitionBuilder.default();
+
+	} else if ((nil = type.NIL())) {
+		return TypeDefinitionBuilder.fromString("nil");
 
 	} else {
 		return TypeDefinitionBuilder.fromString(type.text);
 	}
+
 	// TODO: Continue the rest.
 }
 
-export function asType(typeContext: TypeContext): TypeDefinition {
-	const type = asSimpleType(typeContext.simpleType());
+export function asSingletoneType(type: SingletonTypeContext ,ast: AST): TypeDefinition | undefined {
+	const name = type.NAME();
+	let string;
+	if (type.FALSE()) {
+		return TypeDefinitionBuilder.fromString("false");
+
+	} else if (type.TRUE()) {
+		return TypeDefinitionBuilder.fromString("true");
+
+	} else if (name) {
+		return findType(name.text, ast, getLocation(type));
+
+	} else if ((string = type.STRING())) {
+		return TypeDefinitionBuilder.fromString(string.text);
+	}
+}
+
+export function asType(typeContext: TypeContext, ast: AST): TypeDefinition {
+	const type = asSimpleType(typeContext.simpleType(), ast);
 	const union = typeContext.unionSuffix();
 	const intersection = typeContext.intersectionSuffix();
 
 	if (union) {
 		union.simpleType().forEach(unionType => {
-			type.TypeValue.OrTypes.push(asSimpleType(unionType));
+			type.TypeValue.OrTypes.push(asSimpleType(unionType, ast));
 		});
 	}
 	if (intersection) {
 		intersection.simpleType().forEach(intersectionType => {
-			type.TypeValue.AndTypes.push(asSimpleType(intersectionType));
+			type.TypeValue.AndTypes.push(asSimpleType(intersectionType, ast));
 		});
 	}
 
 	return type;
 }
 
-export function asTypeList(typeList: TypeListContext): TypeDefinition[] {
-	const types = [asType(typeList.type())];
+export function asTypeList(typeList: TypeListContext, ast: AST): TypeDefinition[] {
+	const types = [asType(typeList.type(), ast)];
 	const list = typeList.typeList();
 	if (list) {
-		types.push(...asTypeList(list));
+		types.push(...asTypeList(list, ast));
 	}
 
 	return types;

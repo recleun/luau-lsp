@@ -1,4 +1,4 @@
-import { NormalizedName, NormalizedNames } from "../../types";
+import { AST, NormalizedName, NormalizedNames } from "../../types";
 import {
 	AllNamesListContext,
 	AllNamesListTypeContext,
@@ -21,14 +21,14 @@ export function normalizeNameList(namesList: NameListContext): NormalizedNames {
 	return names;
 }
 
-export function normalizeTypedNameList(namesList: TypedNameListContext): NormalizedNames {
+export function normalizeTypedNameList(namesList: TypedNameListContext, ast: AST): NormalizedNames {
 	const names: NormalizedNames = [];
 
 	namesList.typedName().forEach(name => {
 		const type = name.type();
 		names.push({
 			Name: name.NAME().text,
-			Type: asType(type).TypeValue.Type,
+			Type: asType(type, ast).TypeValue.Type,
 			IsTypeOptional: type.text.endsWith("?"),
 		});
 	});
@@ -36,7 +36,7 @@ export function normalizeTypedNameList(namesList: TypedNameListContext): Normali
 	return names;
 }
 
-export function normalizeMixedNamesList(namesList: MixedNamesListContext): NormalizedNames {
+export function normalizeMixedNamesList(namesList: MixedNamesListContext, ast: AST): NormalizedNames {
 	const names: NormalizedNames = [];
 
 	namesList.optionalTypedName().forEach(name => {
@@ -47,7 +47,7 @@ export function normalizeMixedNamesList(namesList: MixedNamesListContext): Norma
 
 		let type;
 		if ((type = name.type())) {
-			normalizedName.Type = asType(type).TypeValue.Type;
+			normalizedName.Type = asType(type, ast).TypeValue.Type;
 			normalizedName.IsTypeOptional = type.text.endsWith("?");
 		}
 
@@ -57,7 +57,7 @@ export function normalizeMixedNamesList(namesList: MixedNamesListContext): Norma
 	return names;
 }
 
-export function normalizeAllNamesList(allNamesList: AllNamesListContext): NormalizedNames {
+export function normalizeAllNamesList(allNamesList: AllNamesListContext, ast: AST): NormalizedNames {
 	let names: NormalizedNames = [];
 	let namesList;
 	let typedNameList;
@@ -65,20 +65,20 @@ export function normalizeAllNamesList(allNamesList: AllNamesListContext): Normal
 	if ((namesList = allNamesList.nameList())) {
 		names = normalizeNameList(namesList);
 	} else if ((typedNameList = allNamesList.typedNameList())) {
-		names = normalizeTypedNameList(typedNameList);
+		names = normalizeTypedNameList(typedNameList, ast);
 	} else if ((mixedNameList = allNamesList.mixedNamesList())) {
-		names = normalizeMixedNamesList(mixedNameList);
+		names = normalizeMixedNamesList(mixedNameList, ast);
 	}
 
 	return names;
 }
 
-export function normalizeAllNamesListType(allNamesList: AllNamesListTypeContext): NormalizedNames {
+export function normalizeAllNamesListType(allNamesList: AllNamesListTypeContext, ast: AST): NormalizedNames {
 	let names: NormalizedNames = [];
 	let namesList;
 	let typedNameList;
 	if ((namesList = allNamesList.typeList())) {
-		return asTypeList(namesList).map(type => {
+		return asTypeList(namesList, ast).map(type => {
 			return {
 				Name: "",
 				IsTypeOptional: type.RawValue.endsWith("?"),
@@ -86,7 +86,7 @@ export function normalizeAllNamesListType(allNamesList: AllNamesListTypeContext)
 			};
 		});
 	} else if ((typedNameList = allNamesList.typedNameList())) {
-		names = normalizeTypedNameList(typedNameList);
+		names = normalizeTypedNameList(typedNameList, ast);
 	}
 
 	return names;
