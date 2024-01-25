@@ -1,10 +1,11 @@
-import { isParsedType, isParsedValue, log, logTable, toString } from "../../utilities";
-import { AST, ForIn, ForNumeric, AstTokens, TypeDefinition, VariableDeclaration, PossibleTypes, TableType } from "../../types";
+import { isParsedType, isParsedValue } from "../../utilities";
+import { AST, ForIn, ForNumeric, VariableDeclaration, PossibleTypes, TableType } from "../../types";
 import { globals } from "../env";
 import { ForExpressionContext, ForInExpressionContext } from "../LuauGrammar/LuauParser";
-import { buildTable, createParsedValuePlaceHolder, createVariablePlaceholder, normalizeExpression, normalizeExpression1 } from "./as-expression";
+import { buildTable, normalizeExpression, normalizeExpression1 } from "./as-expression";
 import { normalizeAllNamesList } from "./as-names";
 import { areEqual } from "./as-type";
+import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../../classes";
 
 function getTypesFromTable(value: TableType, index: number) {
 	const variableTypes: PossibleTypes[] = [];
@@ -13,8 +14,10 @@ function getTypesFromTable(value: TableType, index: number) {
 	if (field) {
 		if (isParsedType(field.Key)) {
 			variableTypes.push(field.Key.TypeValue.Type);
+
 		} else if (isParsedValue(field.Key)) {
 			variableTypes.push(field.Key.Value);
+
 		} else {
 			variableTypes.push({
 				Type: "Simple",
@@ -63,7 +66,7 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 	const variables: VariableDeclaration[] = [];
 	const variableTypes: PossibleTypes[] = [];
 
-	let expression;
+	let expression; //TODO: ?
 	const iteratorFunction = forInExpression.globalIteratorFunction();
 	if (iteratorFunction) {
 		const name = iteratorFunction.NAME().text;
@@ -129,34 +132,14 @@ export function asForInLoop(currentAST: AST, forInExpression: ForInExpressionCon
 
 	let i = 0;
 	normalizeAllNamesList(forInExpression.allNamesList()).forEach(name => {
-		const type = name.Type ?? variableTypes[i] ?? {
-			Type: "Simple",
-			Value: "any",
-			RawValue: "any"
-		};
-		variables.push({
-			Type: "Variable Declaration",
-			IsGlobal: false,
-			RawValue: `${name.Name}: ${type.RawValue ?? "any"}`,
-			VariableName: name.Name,
-			VariableType: {
-				Type: "Type",
-				RawValue: type.RawValue,
-				TypeName: "",
-				IsExported: false,
-				TypeValue: {
-					Type: type,
-					AndTypes: [],
-					OrTypes: [],
-				},
-				Generics: [],
-			},
-			VariableValue: {
-				Type: "Value",
-				Value: type,
-			},
-			References: [],
-		});
+		const type = name.Type ?? variableTypes[i] ?? PossibleTypesBuilder.asSimple("any");
+		variables.push(VariableDeclarationBuilder.create(
+			name.Name,
+			false,
+			TypeDefinitionBuilder.fromPossibleType(type),
+			ValueBuilder.fromPossibleType(type),
+			`${name.Name}: ${type.RawValue}`,
+		));
 
 		i += 1;
 	});
@@ -180,12 +163,8 @@ export function asForLoop(currentAst: AST, forExpression: ForExpressionContext, 
 		i += 1;
 	});
 
-	const variable = createVariablePlaceholder();
-	variable.VariableName = forExpression.optionalTypedName().NAME().text;
-	variable.VariableType.RawValue = "number";
-	variable.VariableType.TypeName = "number";
-	variable.VariableType.TypeValue.Type.Value = "number";
-	variable.VariableType.TypeValue.Type.RawValue = "number";
+	const name = forExpression.optionalTypedName().NAME().text;
+	const variable = VariableDeclarationBuilder.fromType(TypeDefinitionBuilder.fromString("number", "number"), name);
 
 	loopData.LoopData.Variable = variable;
 }
@@ -193,10 +172,7 @@ export function asForLoop(currentAst: AST, forExpression: ForExpressionContext, 
 export function createForInPlaceholder(): ForIn {
 	const loopData: ForIn = {
 		Type: "ForIn",
-		// LoopData: {
-		// 	Type: "Table",
 		Variables: [],
-		// },
 		Body: {
 			Tokens: [],
 		},
@@ -209,10 +185,10 @@ export function createForNumericPlaceholder(): ForNumeric {
 	const loopData: ForNumeric = {
 		Type: "ForNumeric",
 		LoopData: {
-			Variable: createVariablePlaceholder(),
-			End: createParsedValuePlaceHolder(),
-			Start: createParsedValuePlaceHolder(),
-			Step: createParsedValuePlaceHolder(),
+			Variable: VariableDeclarationBuilder.default(),
+			End: ValueBuilder.default(),
+			Start: ValueBuilder.default(),
+			Step: ValueBuilder.default(),
 		},
 		Body: {
 			Tokens: [],

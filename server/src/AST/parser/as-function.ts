@@ -1,16 +1,19 @@
-import { functionTypeToString } from "../../utilities";
 import {
 	AST,
 	FunctionType,
 	Parameters,
-	AstToken,
-	TypeDefinition,
 	VariableDeclaration,
 	Returns
 } from "../../types";
-import { FuncbodyContext, FunctionParametersContext, FunctionParametersTypeContext, FunctionReturnsContext } from "../LuauGrammar/LuauParser";
+import {
+	FuncbodyContext,
+	FunctionParametersContext,
+	FunctionParametersTypeContext,
+	FunctionReturnsContext
+} from "../LuauGrammar/LuauParser";
 import { normalizeAllNamesList, normalizeAllNamesListType } from "./as-names";
 import { asType, asTypeList } from "./as-type";
+import { AstBuilder, PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../../classes";
 
 export function buildFunctionParameters(functionParameters: FunctionParametersContext): Parameters {
 	const parameters: Parameters = [];
@@ -22,58 +25,26 @@ export function buildFunctionParameters(functionParameters: FunctionParametersCo
 
 	if (parametersNameList) {
 		normalizeAllNamesList(parametersNameList).forEach(normalizedName => {
-			const type = normalizedName.Type ?? {
-				Type: "Simple",
-				RawValue: "any",
-				Value: "any",
-			};
+			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
 			parameters.push({
 				Type: "FunctionParameter",
 				Name: normalizedName.Name,
 				Optional: normalizedName.IsTypeOptional,
 				IsVariadic: false,
-				ParameterType: {
-					Type: "Type",
-					RawValue: type.RawValue,
-					TypeName: "",
-					TypeValue: {
-						Type: type,
-						AndTypes: [],
-						OrTypes: [],
-					},
-					IsExported: false,
-					Generics: [],
-				},
+				ParameterType: TypeDefinitionBuilder.fromPossibleType(type),
 			});
 		});
 	}
+
 	if (variadicParameter) {
 		const type = variadicParameter.type();
-		let parameterType: TypeDefinition = {
-			Type: "Type",
-			RawValue: "any",
-			Generics: [],
-			TypeName: "",
-			TypeValue: {
-				Type: {
-					Type: "Simple",
-					Value: "any",
-					RawValue: "any",
-				},
-				AndTypes: [],
-				OrTypes: [],
-			},
-			IsExported: false,
-		};
-		if (type) {
-			parameterType = asType(type);
-		}
+
 		parameters.push({
 			Type: "FunctionParameter",
 			Name: "",
 			IsVariadic: true,
 			Optional: true,
-			ParameterType: parameterType,
+			ParameterType: type ? asType(type) : TypeDefinitionBuilder.default(),
 		});
 	}
 
@@ -90,58 +61,24 @@ export function buildFunctionParametersType(functionParametersType: FunctionPara
 
 	if (parametersNameList) {
 		normalizeAllNamesListType(parametersNameList).forEach(normalizedName => {
-			const type = normalizedName.Type ?? {
-				Type: "Simple",
-				RawValue: "any",
-				Value: "any",
-			};
+			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
 			parameters.push({
 				Type: "FunctionParameter",
 				Name: normalizedName.Name,
 				Optional: normalizedName.IsTypeOptional,
 				IsVariadic: false,
-				ParameterType: {
-					Type: "Type",
-					RawValue: type.RawValue,
-					TypeName: "",
-					TypeValue: {
-						Type: type,
-						AndTypes: [],
-						OrTypes: [],
-					},
-					IsExported: false,
-					Generics: [],
-				},
+				ParameterType: TypeDefinitionBuilder.fromPossibleType(type),
 			});
 		});
 	}
+
 	if (variadicParameter) {
-		const type = variadicParameter.type();
-		let parameterType: TypeDefinition = {
-			Type: "Type",
-			RawValue: "any",
-			Generics: [],
-			TypeName: "",
-			TypeValue: {
-				Type: {
-					Type: "Simple",
-					Value: "any",
-					RawValue: "any",
-				},
-				AndTypes: [],
-				OrTypes: [],
-			},
-			IsExported: false,
-		};
-		if (type) {
-			parameterType = asType(type);
-		}
 		parameters.push({
 			Type: "FunctionParameter",
 			Name: "",
 			IsVariadic: true,
 			Optional: true,
-			ParameterType: parameterType,
+			ParameterType: asType(variadicParameter.type()),
 		});
 	}
 
@@ -166,6 +103,7 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 				ReturnType: type
 			});
 		});
+
 	} else if ((returnValue = functionReturns?.type())) {
 		const type = asType(returnValue);
 		returns.push({
@@ -174,6 +112,7 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 			IsVariadic: false,
 			ReturnType: type,
 		});
+
 	} else if ((variadicReturn = functionReturns?.variadicReturn() || returnsList?.variadicReturn())) {
 		returns.push({
 			Type: "FunctionReturn",
@@ -187,60 +126,19 @@ export function buildFunctionReturns(functionReturns?: FunctionReturnsContext): 
 }
 
 export function buildFunction(functionBody: FuncbodyContext, AST?: AST): FunctionType {
-	const parameters: Parameters = buildFunctionParameters(functionBody.functionParameters());
-	const returns: Returns = buildFunctionReturns(functionBody.functionReturns());
-
-	const parsedFunction: FunctionType = {
-		Type: "Function",
-		RawValue: "",
-		Value: {
-			Parameters: parameters,
-			Returns: returns,
-		},
-		Body: AST ?? {
-			Tokens: [],
-		}
-	};
-	parsedFunction.RawValue = functionTypeToString(parsedFunction);
-
-	return parsedFunction;
+	return PossibleTypesBuilder.asFunction(
+		buildFunctionParameters(functionBody.functionParameters()),
+		buildFunctionReturns(functionBody.functionReturns()),
+		AST
+	);
 }
 
 export function createFunctionPlaceholder(): [VariableDeclaration, FunctionType] {
-	const functionType: FunctionType = {
-		Type: "Function",
-		RawValue: "",
-		Value: {
-			Parameters: [],
-			Returns: [],
-		},
-		Body: {
-			Tokens: [],
-		},
-	};
-	const variable: VariableDeclaration = {
-		Type: "Variable Declaration",
-		RawValue: "",
-		VariableName: "",
-		VariableType: {
-			Type: "Type",
-			RawValue: "",
-			TypeName: "",
-			TypeValue: {
-				Type: functionType,
-				AndTypes: [],
-				OrTypes: [],
-			},
-			IsExported: false,
-			Generics: [],
-		},
-		VariableValue: {
-			Type: "Value",
-			Value: functionType,
-		},
-		IsGlobal: false,
-		References: [],
-	};
+	const functionType = PossibleTypesBuilder.asFunction([], [], AstBuilder.default(), "");
+	const variable = VariableDeclarationBuilder.abstractCreate(
+		ValueBuilder.fromPossibleType(functionType),
+		TypeDefinitionBuilder.fromPossibleType(functionType),
+	);
 
 	return [variable, functionType];
 }

@@ -27,7 +27,7 @@ export interface FunctionType {
 	Type: "Function",
 	RawValue: string,
 	Value: { Parameters: Parameters, Returns: Returns },
-	Body: AST
+	Body: AST,
 }
 
 export type TableKey = TypeDefinition | Value | string

@@ -41,6 +41,7 @@ import { log, logTable } from "../utilities";
 import { addDiagnostic, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
+import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
 
 let currentAst: AST;
 
@@ -104,7 +105,7 @@ class Listener implements LuauListener {
 		if (ctx.exception) { return; }
 
 		ctx.varList1().text;
-		ctx.expressionList1().text;
+		ctx.expressionList().text;
 	}
 	//TODO:
 	exitWhileExpression(ctx: WhileExpressionContext) {
@@ -175,22 +176,8 @@ class Listener implements LuauListener {
 
 		const variable = parsedToken as VariableDeclaration;
 		variable.VariableName = ctx.funcname().text;
-		variable.VariableValue = {
-			Type: "Value",
-			Value: functionData
-		};
-		variable.VariableType = {
-			Type: "Type",
-			RawValue: functionTypeToString(functionData),
-			TypeName: "",
-			IsExported: false,
-			TypeValue: {
-				Type: functionData,
-				AndTypes: [],
-				OrTypes: [],
-			},
-			Generics: [],
-		};
+		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
+		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 	}
 
@@ -207,27 +194,11 @@ class Listener implements LuauListener {
 		const functionData = buildFunction(ctx.funcbody(), currentAst);
 		currentAst = currentAst.Parent!;
 
-		const variable = setNodeEnds(
-			currentAst.Tokens[currentAst.Tokens.length - 1],
-			ctx
-		) as VariableDeclaration;
+		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
+		const variable = parsedToken as VariableDeclaration;
 		variable.VariableName = ctx.NAME().text;
-		variable.VariableValue = {
-			Type: "Value",
-			Value: functionData
-		};
-		variable.VariableType = {
-			Type: "Type",
-			RawValue: functionTypeToString(functionData),
-			TypeName: "",
-			IsExported: false,
-			TypeValue: {
-				Type: functionData,
-				AndTypes: [],
-				OrTypes: [],
-			},
-			Generics: [],
-		};
+		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
+		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 	}
 
@@ -244,35 +215,15 @@ class Listener implements LuauListener {
 
 		let i = 0;
 		names.forEach(name => {
-			const value = values[i]?.Value ?? {
-				Type: "Simple",
-				Value: "nil",
-				RawValue: "nil",
-			};
+			const value = values[i]?.Value ?? ValueBuilder.fromString("nil");
 			const type = values[i]?.Type ?? name.Type ?? value;
-			const variable: VariableDeclaration = {
-				IsGlobal: false,
-				Type: "Variable Declaration",
-				VariableName: name.Name,
-				RawValue: `local ${name.Name}`,
-				VariableValue: {
-					Type: "Value",
-					Value: value,
-				},
-				VariableType: {
-					Type: "Type",
-					TypeName: "",
-					RawValue: type.RawValue,
-					TypeValue: {
-						Type: type,
-						AndTypes: [],
-						OrTypes: [],
-					},
-					IsExported: false,
-					Generics: [],
-				},
-				References: [],
-			};
+			const variable: VariableDeclaration = VariableDeclarationBuilder.create(
+				name.Name,
+				false,
+				TypeDefinitionBuilder.fromPossibleType(type),
+				ValueBuilder.fromPossibleType(value),
+				`local ${name.Name}`,
+			);
 
 			if (variable.VariableValue.Value.RawValue !== "") {
 				variable.RawValue += ` = ${variable.VariableValue.Value.RawValue}`;

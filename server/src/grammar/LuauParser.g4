@@ -27,7 +27,7 @@ statement: setExpression |
 
 lastStatement: RETURN expressionList? | BREAK;
 
-setExpression: varList1 EQUAL expressionList1;
+setExpression: varList1 EQUAL expressionList;
 compoundSetExpression: var CompoundOperations expression;
 doBlock: DO block END;
 whileExpression: WHILE expression doBlock;
@@ -50,12 +50,9 @@ mixedNamesList: optionalTypedName (COMMA optionalTypedName)*;
 allNamesList: nameList | typedNameList | mixedNamesList;
 allNamesListType: typedNameList | typeList;
 
-expressionList1: (expression1 COMMA)* expression1;
-expressionList2: (expression2 COMMA)* expression2;
 expressionList: (expression COMMA)* expression;
 
 expression1: (NIL | FALSE | TRUE | NUMBER | STRING | VARIADIC_EXPRESSION | function | prefixexp | tableconstructor | (UnaryOperations | NegativeSign) expression1) ((BinaryOperations | NegativeSign) expression1)*;
-expression2: expression1 DOUBLE_COLON type;
 expression: expression1 (DOUBLE_COLON type)?;
 
 var: (NAME | OPEN_PARENTHESIS expression CLOSE_PARENTHESIS varSuffix) varSuffix*;
@@ -73,27 +70,29 @@ function: FUNCTION funcbody;
 funcbody: (OPEN_ANGLE_BRACKET genericTypeList CLOSE_ANGLE_BRACKET)? functionParameters (COLON functionReturns)? NEWLINE* block NEWLINE* END;
 
 functionParameters: OPEN_PARENTHESIS (parameterList)? CLOSE_PARENTHESIS;
-functionParametersType: OPEN_PARENTHESIS (parameterListType)? CLOSE_PARENTHESIS;
-functionReturns: (OPEN_PARENTHESIS returnList? CLOSE_PARENTHESIS) | type | variadicReturn;
 parameterList: allNamesList (COMMA variadicParameter)? | variadicParameter;
-parameterListType: allNamesListType (COMMA variadicParameterType)? | variadicParameterType;
-returnList: typeList (COMMA variadicReturn)? | variadicReturn;
 variadicParameter: VARIADIC_EXPRESSION (COLON type)?;
+
+functionParametersType: OPEN_PARENTHESIS (parameterListType)? CLOSE_PARENTHESIS;
+parameterListType: allNamesListType (COMMA variadicParameterType)? | variadicParameterType;
 variadicParameterType: VARIADIC_EXPRESSION type;
+
+functionReturns: (OPEN_PARENTHESIS returnList? CLOSE_PARENTHESIS) | type | variadicReturn;
+returnList: typeList (COMMA variadicReturn)? | variadicReturn;
 variadicReturn: VARIADIC_EXPRESSION type;
 
 tableconstructor: OPEN_CURLY_BRACKETS fieldList? CLOSE_CURLY_BRACKETS;
 fieldList: field (fieldsep field)* (fieldsep)?;
-field: OPEN_SQUARE_BRACKETS expression1 CLOSE_SQUARE_BRACKETS EQUAL expression1 |
-	NAME EQUAL expression1 |
-	expression1;
+field: OPEN_SQUARE_BRACKETS expression CLOSE_SQUARE_BRACKETS EQUAL expression |
+	NAME EQUAL expression |
+	expression;
 fieldsep: (COMMA | SEMI_COLON);
 
 simpleType:
 	NIL |
 	singletonType |
 	NAME (DOT NAME)? (OPEN_ANGLE_BRACKET typeParams? CLOSE_ANGLE_BRACKET)? |
-	TYPEOF OPEN_PARENTHESIS expression1 CLOSE_PARENTHESIS |
+	TYPEOF OPEN_PARENTHESIS expression CLOSE_PARENTHESIS |
 	tableType |
 	functionType |
 	OPEN_PARENTHESIS type CLOSE_PARENTHESIS;

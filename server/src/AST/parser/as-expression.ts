@@ -3,18 +3,19 @@ import {
 	AST,
 	Fix,
 	NormalizedExpressions,
-	TypeDefinition,
-	Value,
-	VariableDeclaration,
 	PossibleTypes,
 	TableFields,
 	TableKey,
 	TableType
 } from "../../types";
-import { findVariable, isParsedType, log, logTable, tableFieldsToString, tableKeyToString, toString } from "../../utilities";
+import {
+	findVariable,
+	isParsedType,
+	tableFieldsToString,
+	tableKeyToString
+} from "../../utilities";
 import {
 	Expression1Context,
-	Expression2Context,
 	ExpressionContext,
 	NameAndArgsContext,
 	PrefixexpContext,
@@ -76,7 +77,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 		const end = getEnd(field.text, start);
 		const location: Range = Range.create(start, end);
 
-		const expressions = field.expression1();
+		const expressions = field.expression();
 		const name = field.NAME();
 		if (name) {
 			// a = <expression>
@@ -86,7 +87,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 			// [<expression>] = <expression>
 			const expression = expressions.shift();
 			if (expression) {
-				const value = normalizeExpression1([expression], AST)[0].Value;
+				const value = normalizeExpression([expression], AST)[0].Value;
 				key = {
 					Type: "Value",
 					Value: value,
@@ -143,7 +144,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 		}
 		usedIndices.push(key);
 
-		const value: PossibleTypes = normalizeExpression1([expressions[0]], AST)[0].Value;
+		const value: PossibleTypes = normalizeExpression([expressions[0]], AST)[0].Value;
 
 		tableFields.push({
 			Key: key,
@@ -246,22 +247,6 @@ export function normalizeExpression1(expressions: Expression1Context[], AST: AST
 	return normalizedExpressions;
 }
 
-export function normalizeExpression2(expressions: Expression2Context[], AST: AST): NormalizedExpressions {
-	const normalizedExpressions: NormalizedExpressions = [];
-
-	expressions.forEach(expression => {
-		const type = asType(expression.type());
-		const value = normalizeExpression1([expression.expression1()], AST)[0].Value;
-
-		normalizedExpressions.push({
-			Type: type.TypeValue.Type,
-			Value: value,
-		});
-	});
-
-	return normalizedExpressions;
-}
-
 export function normalizeExpression(expressions: ExpressionContext[], AST: AST): NormalizedExpressions {
 	const normalizedExpressions: NormalizedExpressions = [];
 
@@ -278,48 +263,6 @@ export function normalizeExpression(expressions: ExpressionContext[], AST: AST):
 	});
 
 	return normalizedExpressions;
-}
-
-export function createParsedValuePlaceHolder(): Value {
-	const value: Value = {
-		Type: "Value",
-		Value: {
-			Type: "Simple",
-			RawValue: "",
-			Value: "",
-		}
-	};
-
-	return value;
-}
-
-export function createVariablePlaceholder(type?: string): VariableDeclaration {
-	const variable: VariableDeclaration = {
-		Type: "Variable Declaration",
-		IsGlobal: false,
-		RawValue: "",
-		VariableName: "",
-		VariableType: {
-			Type: "Type",
-			TypeName: "",
-			RawValue: type ?? "",
-			IsExported: false,
-			TypeValue: {
-				Type: {
-					Type: "Simple",
-					RawValue: type ?? "",
-					Value: type ?? "",
-				},
-				AndTypes: [],
-				OrTypes: []
-			},
-			Generics: [],
-		},
-		VariableValue: createParsedValuePlaceHolder(),
-		References: [],
-	};
-
-	return variable;
 }
 
 export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [PossibleTypes, PossibleTypes] {

@@ -1,8 +1,6 @@
-import { functionTypeToString } from "../utilities/to-string/function-type-to-string";
 import {
 	Parameters,
 	AstTokens,
-	Value,
 	VariableDeclaration,
 	PossibleTypes,
 	Returns,
@@ -16,41 +14,18 @@ import { parse } from "./parse";
 import { readFile } from "fs";
 import * as path from "path";
 import { getTypeFromValue } from "./parser/as-type";
+import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
 
 const ApiDumb: APIDump = require("../api/api-dump.json");
 const DataTypesJson: DataTypes = require("../api/data-types.json");
 
-const Enums: VariableDeclaration = {
-	Type: "Variable Declaration",
-	IsGlobal: true,
-	RawValue: "Enum",
-	VariableName: "Enum",
-	VariableValue: {
-		Type: "Value",
-		Value: {
-			Type: "Table",
-			RawValue: "",
-			Value: []
-		}
-	},
-	VariableType: {
-		Type: "Type",
-		RawValue: "",
-		TypeName: "",
-		IsExported: false,
-		TypeValue: {
-			Type: {
-				Type: "Table",
-				RawValue: "",
-				Value: []
-			},
-			AndTypes: [],
-			OrTypes: [],
-		},
-		Generics: [],
-	},
-	References: [],
-};
+const Enums: VariableDeclaration = VariableDeclarationBuilder.create(
+	"Enum",
+	true,
+	TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asTable([], "")),
+	ValueBuilder.fromPossibleType(PossibleTypesBuilder.asTable([], "")),
+	"Enum"
+);
 const Constructors: VariableDeclaration[] = [];
 
 ApiDumb.Enums.forEach(enumItem => {
@@ -65,11 +40,7 @@ ApiDumb.Enums.forEach(enumItem => {
 	};
 
 	enumItem.Items.forEach(item => {
-		const value: SimpleType = {
-			Type: "Simple",
-			Value: item.Name,
-			RawValue: `Enum.${enumItem.Name}.${item.Name}`,
-		};
+		const value: SimpleType = PossibleTypesBuilder.asSimple(item.Name, `Enum.${enumItem.Name}.${item.Name}`);
 		items.Value.push({
 			Key: item.Name,
 			Value: value,
@@ -101,22 +72,7 @@ DataTypesJson.Constructors.forEach(constructor => {
 					Type: "FunctionParameter",
 					Name: parameter.Name,
 					Optional: parameter.Default !== null,
-					ParameterType: {
-						Type: "Type",
-						RawValue: parameter.Type.Name,
-						TypeName: "",
-						TypeValue: {
-							Type: {
-								Type: "Simple",
-								Value: parameter.Type.Name,
-								RawValue: parameter.Type.Name,
-							},
-							AndTypes: [],
-							OrTypes: [],
-						},
-						IsExported: false,
-						Generics: [],
-					},
+					ParameterType: TypeDefinitionBuilder.fromString(parameter.Type.Name, parameter.Type.Name),
 					IsVariadic: false,
 				});
 			});
@@ -132,43 +88,15 @@ DataTypesJson.Constructors.forEach(constructor => {
 					Type: "FunctionReturn",
 					IsVariadic: false,
 					Optional: false,
-					ReturnType: {
-						Type: "Type",
-						TypeName: "",
-						TypeValue: {
-							Type: {
-								Type: "Simple",
-								Value: returnItem.Name,
-								RawValue: returnItem.Name,
-							},
-							AndTypes: [],
-							OrTypes: [],
-						},
-						IsExported: false,
-						RawValue: returnItem.Name,
-						Generics: [],
-					}
+					ReturnType: TypeDefinitionBuilder.fromString(returnItem.Name, returnItem.Name),
 				});
 			});
 
-			value = {
-				Type: "Function",
-				Value: {
-					Parameters: parameters,
-					Returns: returns
-				},
-				RawValue: "",
-				Body: {
-					Tokens: [],
-				},
-			};
-			value.RawValue = functionTypeToString(value);
+			value = PossibleTypesBuilder.asFunction(parameters, returns);
 		} else {
-			value = {
-				Type: "Simple",
-				RawValue: member.ValueType?.Name ?? "any",
-				Value: member.ValueType?.Name ?? "any",
-			};
+			value = member.ValueType
+				? PossibleTypesBuilder.asSimple(member.ValueType.Name)
+				: PossibleTypesBuilder.asSimple("any");
 		}
 
 		constructorData.push({
@@ -179,37 +107,14 @@ DataTypesJson.Constructors.forEach(constructor => {
 		});
 	});
 
-	Constructors.push({
-		Type: "Variable Declaration",
-		RawValue: constructor.Name,
-		VariableName: constructor.Name,
-		VariableType: {
-			Type: "Type",
-			TypeName: "",
-			RawValue: "",
-			TypeValue: {
-				Type: {
-					Type: "Table",
-					Value: constructorData,
-					RawValue: "",
-				},
-				AndTypes: [],
-				OrTypes: [],
-			},
-			IsExported: true,
-			Generics: [],
-		},
-		VariableValue: {
-			Type: "Value",
-			Value: {
-				Type: "Table",
-				RawValue: "",
-				Value: constructorData
-			}
-		},
-		IsGlobal: true,
-		References: [],
-	});
+	const type = PossibleTypesBuilder.asTable(constructorData);
+	Constructors.push(VariableDeclarationBuilder.create(
+		constructor.Name,
+		true,
+		TypeDefinitionBuilder.fromPossibleType(type),
+		ValueBuilder.fromPossibleType(type),
+		constructor.Name,
+	));
 });
 
 const globals: AstTokens = [];
@@ -227,24 +132,18 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err,
 				token.TypeName = "typeof";
 			}
 
-			const variable: VariableDeclaration = {
-				Type: "Variable Declaration",
-				RawValue: token.RawValue.replace(/type (.*?)\s*:/, "local $1 ="),
-				IsGlobal: true,
-				VariableName: token.TypeName,
-				VariableType: token,
-				VariableValue: {
-					Type: "Value",
-					Value: token.TypeValue.Type,
-				},
-				References: [],
-			};
-
-			return variable;
+			return VariableDeclarationBuilder.create(
+				token.TypeName,
+				true,
+				token,
+				ValueBuilder.fromTypeDefinition(token),
+				token.RawValue.replace(/type (.*?)\s*:/, "$1")
+			);
 		}
 
 		return token;
 	});
+
 	globals.push(...AST.Tokens);
 });
 readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err, code) => {
@@ -253,20 +152,13 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err
 	const AST = parse(code, true);
 	AST.Tokens.map(token => {
 		if (token.Type === "Type") {
-			const variable: VariableDeclaration = {
-				Type: "Variable Declaration",
-				RawValue: token.RawValue.replace(/type (.*?)\s*:/, "local $1 ="),
-				IsGlobal: true,
-				VariableName: token.TypeName,
-				VariableType: token,
-				VariableValue: {
-					Type: "Value",
-					Value: token.TypeValue.Type,
-				},
-				References: [],
-			};
-
-			return variable;
+			return VariableDeclarationBuilder.create(
+				token.TypeName,
+				true,
+				token,
+				ValueBuilder.fromTypeDefinition(token),
+				token.RawValue.replace(/type (.*?)\s*:/, "$1")
+			);
 		}
 
 		return token;

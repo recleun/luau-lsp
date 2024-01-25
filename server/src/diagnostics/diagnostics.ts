@@ -16,7 +16,7 @@ export function addDiagnostic(diagnostic: LuauDiagnostic, ...extra: string[]) {
 				uri: currentUri,
 				range: diagnostic.range,
 			},
-			message: value
+			message: value,
 		});
 	});
 
