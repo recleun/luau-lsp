@@ -8,7 +8,7 @@ import { logTable } from "../utilities";
 const ASTs: { [key: URI]: AST } = {};
 
 export function generateAST(parameter: TextDocument) {
-	const AST = parseFile(parameter, true);
+	const AST = parseFile(parameter, false);
 	ASTs[parameter.uri] = {
 		Tokens: AST.Tokens, //[...AST.Tokens, Enums, ...Constructors, ...globals],
 		Uri: parameter.uri,

@@ -273,10 +273,19 @@ class Listener implements LuauListener {
 	exitTypeDeclaration(ctx: TypeDeclarationContext) {
 		if (ctx.exception) { return; }
 
+		const name = ctx.NAME();
+		const start = getEnd(
+			`${ctx.EXPORT()?.text}${ctx.type().text}`,
+			Position.create(ctx.start.line - 1, ctx.start.charPositionInLine)
+		);
+		const end = getEnd(name.text, start);
+
 		const type = asType(ctx.type(), currentAst);
-		type.TypeName = ctx.NAME().text;
+		type.TypeName = name.text;
 		type.RawValue = `type ${type.TypeName} = ${type.RawValue}`;
 		type.IsExported = ctx.EXPORT() !== undefined;
+		type.NameStart = start;
+		type.NameEnd = end;
 
 		currentAst.Tokens.push(setNodeEnds(type, ctx));
 	}

@@ -1,6 +1,6 @@
 import { DefinitionLink, DefinitionParams, Hover, MarkupKind, Position, Range } from "vscode-languageserver";
 import { getCurrentUri } from "../diagnostics";
-import { AST, VariableDeclaration, Reference, TableField, TableFieldType, TableFields } from "../types";
+import { AST, VariableDeclaration, Reference, TableField, TableFieldType, TableFields, ASTNode, TypeDefinition, AstToken } from "../types";
 import { log, logTable, tableFieldToString } from "../utilities";
 import { getAST } from "../ast";
 
@@ -15,13 +15,14 @@ export function isInBounds(start: Position, end: Position, position: Position): 
 }
 
 interface VariableData {
-	Node: VariableDeclaration | TableField | TableFieldType,
+	Node: VariableDeclaration | TypeDefinition | TableField | TableFieldType,
 	NodeLocation: Range,
 	NodeNameLocation: Range,
 	RawValue: string,
 	ReferenceLocation: Range,
 	References: Reference[],
 }
+type ReferenceableNode = AstToken & (VariableDeclaration | TypeDefinition);
 
 function checkReferences(references: Reference[], position: Position): [true, Reference] | [false, undefined] {
 	for (const reference of references) {
@@ -70,70 +71,49 @@ function checkTableFields(fields: TableFields, position: Position): [true, Table
 	return [false, undefined];
 }
 
-export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
-	for (const node of ast.Tokens) {
-		if (node.Type !== "Variable Declaration") {
-			continue;
-		}
-		if (!node.Start || !node.End || !node.NameStart || !node.NameEnd) {
-			continue;
-		}
+function checkNode(
+	position: Position,
+	node: ReferenceableNode,
+	getType: (node: ReferenceableNode) => TypeDefinition
+): VariableData | undefined {
+	if (!node.Start || !node.End || !node.NameStart || !node.NameEnd) {
+		return;
+	}
+	const type = getType(node);
 
-		const isHere = isInBounds(node.Start, node.End, position);
-		if (!isHere) {
-			const [isReference, reference] = checkReferences(node.References, position);
-			if (isReference) {
-				return {
-					Node: node,
-					NodeLocation: Range.create(node.Start, node.End),
-					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-					RawValue: node.RawValue,
-					ReferenceLocation: Range.create(reference.Start, reference.End),
-					References: node.References,
-				};
-			}
-
-			if (node.VariableType.TypeValue.Type.Type === "Table") {
-				const [isReference, field, reference] = checkTableFieldsReferences(node.VariableType.TypeValue.Type.Value, position);
-				if (isReference) {
-					return {
-						Node: field,
-						NodeLocation: Range.create(field.Start!, field.End!),
-						NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
-						RawValue: field.Value.RawValue,
-						ReferenceLocation: Range.create(reference.Start, reference.End),
-						References: field.References,
-					};
-				}
-			}
-
-			continue;
-		}
-
-		if (node.VariableValue.Value.Type === "Function") {
-			return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
+	const isHere = isInBounds(node.Start, node.End, position);
+	if (!isHere) {
+		const [isReference, reference] = checkReferences(node.References, position);
+		if (isReference) {
+			return {
 				Node: node,
 				NodeLocation: Range.create(node.Start, node.End),
 				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
 				RawValue: node.RawValue,
-				ReferenceLocation: Range.create(node.Start, node.End),
+				ReferenceLocation: Range.create(reference.Start, reference.End),
 				References: node.References,
 			};
-		} else if (node.VariableType.TypeValue.Type.Type === "Table") {
-			const [isField, field] = checkTableFields(node.VariableType.TypeValue.Type.Value, position);
-			if (isField) {
+		}
+
+		if (type.TypeValue.Type.Type === "Table") {
+			const [isReference, field, reference] = checkTableFieldsReferences(type.TypeValue.Type.Value, position);
+			if (isReference) {
 				return {
 					Node: field,
-					NodeLocation: Range.create(node.Start, node.End),
-					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-					RawValue: tableFieldToString(field, " = ", false),
-					ReferenceLocation: Range.create(field.Start!, field.End!),
+					NodeLocation: Range.create(field.Start!, field.End!),
+					NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
+					RawValue: field.Value.RawValue,
+					ReferenceLocation: Range.create(reference.Start, reference.End),
 					References: field.References,
 				};
 			}
 		}
 
-		return {
+		return;
+	}
+
+	if (node.Type === "Variable Declaration" && node.VariableValue.Value.Type === "Function") {
+		return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
 			Node: node,
 			NodeLocation: Range.create(node.Start, node.End),
 			NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
@@ -141,6 +121,51 @@ export function getNodeAtPosition(position: Position, ast: AST): VariableData | 
 			ReferenceLocation: Range.create(node.Start, node.End),
 			References: node.References,
 		};
+	} else if (type.TypeValue.Type.Type === "Function") {
+		return {
+			Node: type,
+			NodeLocation: Range.create(node.Start, node.End),
+			NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+			RawValue: type.RawValue,
+			ReferenceLocation: Range.create(node.Start, node.End),
+			References: type.References,
+		};
+	} else if (type.TypeValue.Type.Type === "Table") {
+		const [isField, field] = checkTableFields(type.TypeValue.Type.Value, position);
+		if (isField) {
+			return {
+				Node: field,
+				NodeLocation: Range.create(node.Start, node.End),
+				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+				RawValue: tableFieldToString(field, " = ", false),
+				ReferenceLocation: Range.create(field.Start!, field.End!),
+				References: field.References,
+			};
+		}
+	}
+
+	return {
+		Node: node,
+		NodeLocation: Range.create(node.Start, node.End),
+		NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+		RawValue: node.RawValue,
+		ReferenceLocation: Range.create(node.Start, node.End),
+		References: node.References,
+	};
+}
+
+export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
+	for (const node of ast.Tokens) {
+		if (node.Type !== "Variable Declaration" && node.Type !== "Type") {
+			continue;
+		}
+
+		const variableData = checkNode(position, node, (node) => {
+			return node.Type === "Variable Declaration" ? node.VariableType : node;
+		});
+		if (variableData) {
+			return variableData;
+		}
 	}
 
 	return;
