@@ -51,16 +51,6 @@ export function getEnd(text: string, start: Position): Position {
 	);
 }
 
-export function getLocation<T extends AntlrNode>(item: T, endOffset: number = 0): Range {
-	return Range.create(
-		Position.create(item.start.line - 1, item.start.charPositionInLine),
-		Position.create(
-			(item.stop?.line || item.start.line) - 1,
-			item.stop?.charPositionInLine || (item.start.charPositionInLine + endOffset)
-		)
-	);
-}
-
 export function buildTable(table: TableconstructorContext, AST: AST): TableType {
 	const tableFields: TableFields = [];
 	tableFields.Content = "TableFields";

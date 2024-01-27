@@ -275,7 +275,7 @@ class Listener implements LuauListener {
 
 		const name = ctx.NAME();
 		const start = getEnd(
-			`${ctx.EXPORT()?.text}${ctx.type().text}`,
+			`${ctx.EXPORT()?.text ?? ""}${ctx.TYPE().text}`,
 			Position.create(ctx.start.line - 1, ctx.start.charPositionInLine)
 		);
 		const end = getEnd(name.text, start);

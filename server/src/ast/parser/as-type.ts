@@ -23,7 +23,7 @@ import {
 } from "./as-function";
 import { DiagnosticSeverity, LSPAny, Position, Range } from "vscode-languageserver";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder } from "../../classes";
-import { getEnd, getLocation } from "./as-expression";
+import { getEnd } from "./as-expression";
 import { globals } from "../env";
 
 interface ErrorMessage {
@@ -358,7 +358,12 @@ export function asSingletoneType(type: SingletonTypeContext ,ast: AST): TypeDefi
 		return TypeDefinitionBuilder.fromString("true");
 
 	} else if (name) {
-		return findType(name.text, ast, getLocation(type));
+		const start = Position.create(type.start.line - 1, type.start.charPositionInLine);
+
+		return findType(name.text, ast, Range.create(
+			start,
+			getEnd(name.text, start)
+		));
 
 	} else if ((string = type.STRING())) {
 		return TypeDefinitionBuilder.fromString(string.text);
