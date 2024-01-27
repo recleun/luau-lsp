@@ -1,34 +1,12 @@
 import { Position, Range, URI } from "vscode-languageserver";
 import { IfStatement } from "./parse-types";
-import { ForLoop } from "./parse/for-loops";
-import { TypeDefinition, Value } from "./parse/possible-type";
-
-export interface VariableDeclaration extends Referenceable {
-	Type: "Variable Declaration",
-	VariableName: string,
-	IsGlobal: boolean,
-	VariableType: TypeDefinition,
-	VariableValue: Value,
-	RawValue: string,
-}
-
-export interface Reference {
-	Start: Position,
-	End: Position,
-	FileUri: URI
-}
+import { ForLoop } from "./ast/parse/for-loops";
+import { TypeDefinition, Value, VariableDeclaration } from "./ast/parse/possible-type";
 
 export interface ASTNode {
 	Start?: Position,
 	End?: Position,
 }
-export interface Referenceable {
-	References: Reference[],
-	NameStart?: Position,
-	NameEnd?: Position,
-}
-export type ReferenceableASTNode = ASTNode & Referenceable
-
 export type PossibleTokens =
 	VariableDeclaration |
 	TypeDefinition |
@@ -44,7 +22,10 @@ export interface AST {
 	Parent?: AST,
 }
 
-export * from "./parse/possible-type";
-export * from "./parse/function-types";
-export * from "./parse/for-loops";
-export * from "./parse/if-statements";
+export * from "./ast/parse/possible-type";
+export * from "./ast/parse/function-types";
+export * from "./ast/parse/for-loops";
+export * from "./ast/parse/if-statements";
+export * from "./ast/parse/reference";
+export * from "./ast/env/api-dump";
+export * from "./ast/env/data-types";

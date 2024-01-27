@@ -1,4 +1,4 @@
-import { AST, VariableDeclaration } from "../parse-types";
+import { AST, VariableDeclaration } from "../../parse-types";
 import { Value, TableType } from "./possible-type";
 
 export interface Pairs {

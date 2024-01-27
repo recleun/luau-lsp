@@ -8,8 +8,8 @@ import {
 	TableFields,
 	TableType
 } from "../types";
-import { APIDump } from "../types/api/api-dump";
-import { DataTypes } from "../types/api/data-types";
+import { APIDump } from "../types/ast/env/api-dump";
+import { DataTypes } from "../types/ast/env/data-types";
 import { parse } from "./parse";
 import { readFile } from "fs";
 import * as path from "path";
