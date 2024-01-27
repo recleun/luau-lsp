@@ -309,7 +309,6 @@ export function parse(code: string, stopLog?: boolean): AST {
 	if (!stopLog) {
 		logTable(AST);
 	}
-	// logTable(AST);
 
 	return AST;
 }

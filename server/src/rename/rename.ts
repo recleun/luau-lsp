@@ -1,5 +1,5 @@
 import { Range, RenameParams, WorkspaceEdit } from "vscode-languageserver";
-import { getVariableAtPosition } from "../definition";
+import { getNodeAtPosition } from "../definition";
 import { getCurrentUri } from "../diagnostics";
 import { getAST } from "../ast";
 
@@ -17,7 +17,7 @@ export function onRename(params: RenameParams): WorkspaceEdit | null | undefined
 		return;
 	}
 
-	const variableData = getVariableAtPosition(params.position, ast);
+	const variableData = getNodeAtPosition(params.position, ast);
 	if (!variableData) {
 		return;
 	}

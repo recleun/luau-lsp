@@ -1,6 +1,6 @@
 import { Hover, HoverParams, MarkupKind } from "vscode-languageserver";
 import { getAST } from "../ast";
-import { getVariableAtPosition } from "../definition";
+import { getNodeAtPosition } from "../definition";
 import { wrapInCodeBlocks } from "../utilities";
 
 export function onHover(hoverParams: HoverParams): Hover | undefined {
@@ -9,7 +9,7 @@ export function onHover(hoverParams: HoverParams): Hover | undefined {
 		return;
 	}
 
-	const result = getVariableAtPosition(hoverParams.position, ast);
+	const result = getNodeAtPosition(hoverParams.position, ast);
 	if (!result) {
 		return;
 	}

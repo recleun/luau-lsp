@@ -23,7 +23,7 @@ interface VariableData {
 	References: Reference[],
 }
 
-export function getVariableAtPosition(position: Position, ast: AST): VariableData | undefined {
+export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
 	for (const node of ast.Tokens) {
 		if (!node.Start || !node.End) {
 			continue;
@@ -91,7 +91,7 @@ export function getVariableAtPosition(position: Position, ast: AST): VariableDat
 			}
 
 			if (node.VariableValue.Value.Type === "Function") {
-				return getVariableAtPosition(position, node.VariableValue.Value.Body) || {
+				return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
 					Node: node,
 					NodeLocation: Range.create(node.Start, node.End),
 					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
@@ -153,7 +153,7 @@ export function onDefinition(params: DefinitionParams): DefinitionLink[] {
 		return definitions;
 	}
 
-	const result = getVariableAtPosition(params.position, ast);
+	const result = getNodeAtPosition(params.position, ast);
 	if (!result) {
 		return definitions;
 	}
