@@ -102,7 +102,7 @@ export class VariableDeclarationBuilder {
 			IsGlobal: false,
 			VariableType: useDefaultType
 				? TypeDefinitionBuilder.default()
-				: TypeDefinitionBuilder.fromPossibleType(getTypeFromValue(value.Value)[0]),
+				: getTypeFromValue(value.Value)[0],
 			VariableValue: value,
 			RawValue: rawValue,
 			References: [],

@@ -18,13 +18,13 @@ export type ConvertableTypes = Parameters
 
 export interface NormalizedExpression {
 	Value: PossibleTypes,
-	Type?: PossibleTypes,
+	Type?: TypeDefinition,
 }
 export type NormalizedExpressions = NormalizedExpression[];
 
 export interface NormalizedName {
 	Name: string,
-	Type?: PossibleTypes,
+	Type?: TypeDefinition,
 	IsTypeOptional: boolean,
 }
 export type NormalizedNames = NormalizedName[];

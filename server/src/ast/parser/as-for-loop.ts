@@ -1,5 +1,5 @@
-import { isParsedType, isParsedValue } from "../../utilities";
-import { AST, ForIn, ForNumeric, VariableDeclaration, PossibleTypes, TableType } from "../../types";
+import { isTypeDefinition, isValue } from "../../utilities";
+import { AST, ForIn, ForNumeric, VariableDeclaration, PossibleTypes, TableType, TypeDefinition } from "../../types";
 import { globals } from "../env";
 import { ForExpressionContext, ForInExpressionContext } from "../LuauGrammar/LuauParser";
 import { buildTable, getEnd, normalizeExpression, normalizeExpression1 } from "./as-expression";
@@ -8,37 +8,33 @@ import { areEqual } from "./as-type";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../../classes";
 import { Position } from "vscode-languageserver";
 
-function getTypesFromTable(value: TableType, index: number) {
-	const variableTypes: PossibleTypes[] = [];
+function getTypesFromTable(value: TableType, index: number): TypeDefinition[] {
+	const variableTypes: TypeDefinition[] = [];
 	const field = value.Value[index];
 
 	if (field) {
-		if (isParsedType(field.Key)) {
-			variableTypes.push(field.Key.TypeValue.Type);
+		if (isTypeDefinition(field.Key)) {
+			variableTypes.push(field.Key);
 
-		} else if (isParsedValue(field.Key)) {
-			variableTypes.push(field.Key.Value);
+		} else if (isValue(field.Key)) {
+			variableTypes.push(TypeDefinitionBuilder.fromPossibleType(field.Key.Value));
 
 		} else {
-			variableTypes.push({
-				Type: "Simple",
-				RawValue: field.Key,
-				Value: field.Key,
-			});
+			variableTypes.push(TypeDefinitionBuilder.fromString(field.Key));
 		}
 
-		if (isParsedType(field.Value)) {
-			variableTypes.push(field.Value.TypeValue.Type);
-		} else {
+		if (isTypeDefinition(field.Value)) {
 			variableTypes.push(field.Value);
+		} else {
+			variableTypes.push(TypeDefinitionBuilder.fromPossibleType(field.Value));
 		}
 	}
 
 	return variableTypes;
 }
 
-function getTypeAsTable(value: TableType): PossibleTypes[] {
-	const variableTypes = [];
+function getTypeAsTable(value: TableType): TypeDefinition[] {
+	const variableTypes: TypeDefinition[] = [];
 	const types1 = getTypesFromTable(value, 0);
 	const types2 = getTypesFromTable(value, 1);
 
@@ -54,7 +50,7 @@ function getTypeAsTable(value: TableType): PossibleTypes[] {
 	return variableTypes;
 }
 
-function mergeVariableTypes(variableTypes: PossibleTypes[], otherVariableTypes: PossibleTypes[]) {
+function mergeVariableTypes(variableTypes: TypeDefinition[], otherVariableTypes: TypeDefinition[]) {
 	if (otherVariableTypes[0] && (!variableTypes[0] || variableTypes[0].RawValue === "any")) {
 		variableTypes[0] = otherVariableTypes[0];
 	}
@@ -65,7 +61,7 @@ function mergeVariableTypes(variableTypes: PossibleTypes[], otherVariableTypes: 
 
 export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, loopData: ForIn): ForIn {
 	const variables: VariableDeclaration[] = [];
-	const variableTypes: PossibleTypes[] = [];
+	const variableTypes: TypeDefinition[] = [];
 
 	let expression; //TODO: ?
 	const iteratorFunction = forInExpression.globalIteratorFunction();
@@ -92,8 +88,8 @@ export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, l
 			if (actualIterator.ReturnType.TypeValue.Type.Type !== "Function") { break; }
 
 			const returns = actualIterator.ReturnType.TypeValue.Type.Value.Returns;
-			variableTypes[0] = returns[0].ReturnType.TypeValue.Type;
-			variableTypes[1] = returns[1].ReturnType.TypeValue.Type;
+			variableTypes[0] = returns[0].ReturnType;
+			variableTypes[1] = returns[1].ReturnType;
 		}
 
 		const expression = args.expressionList()?.expression();
@@ -115,10 +111,10 @@ export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, l
 					break;
 				}
 			} else if (normalizedExpression.Value.Type === "Table") {
-				let _variableTypes: PossibleTypes[];
+				let _variableTypes: TypeDefinition[];
 
-				if (normalizedExpression.Type?.Type === "Table") {
-					_variableTypes = getTypeAsTable(normalizedExpression.Type);
+				if (normalizedExpression.Type?.TypeValue.Type.Type === "Table") {
+					_variableTypes = getTypeAsTable(normalizedExpression.Type.TypeValue.Type);
 				} else {
 					_variableTypes = getTypeAsTable(normalizedExpression.Value);
 				}
@@ -138,12 +134,12 @@ export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, l
 	let character = allNamesList.start.charPositionInLine;
 	let line = allNamesList.start.line - 1;
 	normalizeAllNamesList(allNamesList, ast).forEach(name => {
-		const type = name.Type ?? variableTypes[i] ?? PossibleTypesBuilder.asSimple("any");
+		const type = name.Type ?? variableTypes[i] ?? TypeDefinitionBuilder.fromString("any");
 		const variable = VariableDeclarationBuilder.create(
 			name.Name,
 			false,
-			TypeDefinitionBuilder.fromPossibleType(type),
-			ValueBuilder.fromPossibleType(type),
+			type,
+			ValueBuilder.fromTypeDefinition(type),
 			`${name.Name}: ${type.RawValue}`,
 		);
 		variable.NameStart = Position.create(line, character);

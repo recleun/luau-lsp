@@ -6,7 +6,7 @@ export function tableKeyToString(key: TableKey): string {
 	} else if (key.Type === "Value" && key.Value.Type === "Simple") {
 		key = key.Value.RawValue;
 	} else if (key.Type === "Type" && key.TypeValue.Type.Type === "Simple") {
-		key = key.TypeValue.Type.RawValue;
+		key = key.RawValue;
 	}
 
 	return "";

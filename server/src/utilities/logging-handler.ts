@@ -1,3 +1,8 @@
+/**
+ * You can still use `console.log()` normally, which for some reason wasn't the case when I
+ * started out, I'll leave this here though.
+ */
+
 import { Connection } from "vscode-languageserver";
 
 type LoggingFunction = "log" | "warn" | "error" | "info";

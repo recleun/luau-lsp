@@ -185,47 +185,47 @@ export function isArithmetic(text: string): boolean {
 	);
 }
 
-export function getTypeFromValue(value: PossibleTypes): [PossibleTypes, ErrorMessage[]] {
+export function getTypeFromValue(value: PossibleTypes): [TypeDefinition, ErrorMessage[]] {
 	if (value.Type === "Table" || value.Type === "Function") {
-		return [value, []];
+		return [TypeDefinitionBuilder.fromPossibleType(value), []];
 	}
 
 	if (isString(value.RawValue)) {
-		return [{
+		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "string",
 			Value: "string",
-		}, getEscapeErrors(value.RawValue)];
+		}), getEscapeErrors(value.RawValue)];
 	} else if (value.RawValue === "true" || value.RawValue === "false") {
-		return [{
+		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "boolean",
 			Value: "boolean",
-		}, []];
+		}), []];
 	} else if (parseInt(value.RawValue)) {
-		return [{
+		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "number",
 			Value: "number",
-		}, []];
+		}), []];
 	} else if (isArithmetic(value.RawValue)) {
 		// TODO: Get arithmetic errors and check for non-numbers (aka CFrames)
-		return [{
+		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "number",
 			Value: "number",
-		}, []];
+		}), []];
 	} else if (value.RawValue === "nil") {
-		return [{
+		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "nil",
 			Value: "nil",
-		}, []];
+		}), []];
 	} else {
 		// TODO: Look for references to other variables and/or function calls and/or table
 		// indexing.
 
-		return [value, []];
+		return [TypeDefinitionBuilder.fromPossibleType(value), []];
 	}
 }
 
@@ -387,6 +387,6 @@ export function asTypeList(typeList: TypeListContext, ast: AST): TypeDefinition[
 	return types;
 }
 
-export function areEqual(type1: PossibleTypes, type2: PossibleTypes) {
+export function areEqual(type1: TypeDefinition, type2: TypeDefinition) {
 	return type1.RawValue === type2.RawValue;
 }

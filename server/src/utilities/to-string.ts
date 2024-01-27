@@ -1,5 +1,5 @@
 import { ConvertableTypes } from "../types";
-import { isParsedType, isParsedValue, isParameters, isReturns } from "./type-checking";
+import { isTypeDefinition, isValue, isParameters, isReturns } from "./type-checking";
 import { parametersToString } from "./to-string/parameters-to-string";
 import { returnsToString } from "./to-string/returns-to-string";
 import { tableFieldToString, tableFieldsToString } from "./to-string/table-fields-to-string";
@@ -21,9 +21,9 @@ import { isTableField, isTableFields } from "./type-checking/is-table-field";
 export function toString(value: any, ...params: any[]): string {
 	if (typeof value === "string") { return value; }
 
-	if (isParsedValue(value)) {
+	if (isValue(value)) {
 		return value.Value.RawValue;
-	} else if (isParsedType(value)) {
+	} else if (isTypeDefinition(value)) {
 		return value.RawValue;
 	}
 

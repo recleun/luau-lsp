@@ -25,13 +25,13 @@ export function buildFunctionParameters(functionParameters: FunctionParametersCo
 
 	if (parametersNameList) {
 		normalizeAllNamesList(parametersNameList, ast).forEach(normalizedName => {
-			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
+			const type = normalizedName.Type ?? TypeDefinitionBuilder.fromString("any");
 			parameters.push({
 				Type: "FunctionParameter",
 				Name: normalizedName.Name,
 				Optional: normalizedName.IsTypeOptional,
 				IsVariadic: false,
-				ParameterType: TypeDefinitionBuilder.fromPossibleType(type),
+				ParameterType: type,
 			});
 		});
 	}
@@ -61,13 +61,13 @@ export function buildFunctionParametersType(functionParametersType: FunctionPara
 
 	if (parametersNameList) {
 		normalizeAllNamesListType(parametersNameList, ast).forEach(normalizedName => {
-			const type = normalizedName.Type ?? PossibleTypesBuilder.asSimple("any");
+			const type = normalizedName.Type ?? TypeDefinitionBuilder.fromString("any");
 			parameters.push({
 				Type: "FunctionParameter",
 				Name: normalizedName.Name,
 				Optional: normalizedName.IsTypeOptional,
 				IsVariadic: false,
-				ParameterType: TypeDefinitionBuilder.fromPossibleType(type),
+				ParameterType: type,
 			});
 		});
 	}

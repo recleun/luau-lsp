@@ -1,7 +1,7 @@
 import { TableField, TableFields } from "../../types";
 
 export function isTableField(obj: any): obj is TableField {
-	return typeof obj.key !== "undefined" && typeof obj.value !== "undefined" ;
+	return typeof obj.Key !== "undefined" && typeof obj.Value !== "undefined" ;
 }
 
 export function isTableFields(obj: any): obj is TableFields {

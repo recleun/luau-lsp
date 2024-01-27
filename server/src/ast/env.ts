@@ -44,7 +44,7 @@ ApiDumb.Enums.forEach(enumItem => {
 		items.Value.push({
 			Key: item.Name,
 			Value: value,
-			Type: value,
+			Type: TypeDefinitionBuilder.fromPossibleType(value),
 			References: [],
 		});
 	});
@@ -52,7 +52,7 @@ ApiDumb.Enums.forEach(enumItem => {
 	Enums.VariableValue.Value.Value.push({
 		Key: enumItem.Name,
 		Value: items,
-		Type: items,
+		Type: TypeDefinitionBuilder.fromPossibleType(items),
 		References: [],
 	});
 });

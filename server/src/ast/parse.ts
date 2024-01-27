@@ -33,7 +33,7 @@ import { getEnd, normalizeExpression } from "./parser/as-expression";
 import { normalizeAllNamesList } from "./parser/as-names";
 import { buildFunction, createFunctionPlaceholder } from "./parser/as-function";
 import { functionTypeToString } from "../utilities/to-string/function-type-to-string";
-import { asType } from "./parser/as-type";
+import { asType, getTypeFromValue } from "./parser/as-type";
 import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { asForInLoop, asForLoop, createForInPlaceholder, createForNumericPlaceholder } from "./parser/as-for-loop";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -238,22 +238,23 @@ class Listener implements LuauListener {
 		let character = allNamesList.start.charPositionInLine;
 		let line = allNamesList.start.line - 1;
 		names.forEach(name => {
-			const value = values[i]?.Value ?? ValueBuilder.fromString("nil");
-			const type = values[i]?.Type ?? name.Type ?? value;
+			const value = values[i].Value ?? ValueBuilder.fromString("nil");
+			const type = values[i].Type ?? name.Type ?? getTypeFromValue(value)[0]; // TODO: Send errors.
 			const variable: VariableDeclaration = VariableDeclarationBuilder.create(
 				name.Name,
 				false,
-				TypeDefinitionBuilder.fromPossibleType(type),
+				type,
 				ValueBuilder.fromPossibleType(value),
 				`local ${name.Name}`,
 			);
 			variable.NameStart = Position.create(line, character);
 			variable.NameEnd = getEnd(separatedNames[i], variable.NameStart);
 
+			if (variable.VariableType.TypeName !== "") {
+				variable.RawValue += `: ${variable.VariableType.TypeName}`;
+			}
 			if (variable.VariableValue.Value.RawValue !== "") {
 				variable.RawValue += ` = ${variable.VariableValue.Value.RawValue}`;
-			} else if (variable.VariableType.RawValue !== "") {
-				variable.RawValue += `: ${variable.VariableType.RawValue}`;
 			}
 
 			if (separatedNames[i].includes("\n")) {

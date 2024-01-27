@@ -6,7 +6,7 @@ interface TableFieldBase extends ReferenceableASTNode {
 }
 export interface TableField extends TableFieldBase {
 	Value: PossibleTypes,
-	Type: PossibleTypes,
+	Type: TypeDefinition,
 }
 export interface TableFieldType extends TableFieldBase {
 	Value: TypeDefinition,

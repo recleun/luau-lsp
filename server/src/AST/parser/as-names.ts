@@ -28,7 +28,7 @@ export function normalizeTypedNameList(namesList: TypedNameListContext, ast: AST
 		const type = name.type();
 		names.push({
 			Name: name.NAME().text,
-			Type: asType(type, ast).TypeValue.Type,
+			Type: asType(type, ast),
 			IsTypeOptional: type.text.endsWith("?"),
 		});
 	});
@@ -47,7 +47,7 @@ export function normalizeMixedNamesList(namesList: MixedNamesListContext, ast: A
 
 		let type;
 		if ((type = name.type())) {
-			normalizedName.Type = asType(type, ast).TypeValue.Type;
+			normalizedName.Type = asType(type, ast);
 			normalizedName.IsTypeOptional = type.text.endsWith("?");
 		}
 
@@ -82,7 +82,7 @@ export function normalizeAllNamesListType(allNamesList: AllNamesListTypeContext,
 			return {
 				Name: "",
 				IsTypeOptional: type.RawValue.endsWith("?"),
-				Type: type.TypeValue.Type,
+				Type: type,
 			};
 		});
 	} else if ((typedNameList = allNamesList.typedNameList())) {
