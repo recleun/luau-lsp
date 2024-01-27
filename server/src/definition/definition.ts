@@ -1,6 +1,6 @@
 import { DefinitionLink, DefinitionParams, Hover, MarkupKind, Position, Range } from "vscode-languageserver";
 import { getCurrentUri } from "../diagnostics";
-import { AST, VariableDeclaration, Reference, TableField, TableFieldType } from "../types";
+import { AST, VariableDeclaration, Reference, TableField, TableFieldType, TableFields } from "../types";
 import { log, logTable, tableFieldToString } from "../utilities";
 import { getAST } from "../ast";
 
@@ -23,124 +23,124 @@ interface VariableData {
 	References: Reference[],
 }
 
+function checkReferences(references: Reference[], position: Position): [true, Reference] | [false, undefined] {
+	for (const reference of references) {
+		if (reference.FileUri !== getCurrentUri()) {
+			continue;
+		}
+		if (!isInBounds(reference.Start, reference.End, position)) {
+			continue;
+		}
+
+		return [true, reference];
+	}
+
+	return [false, undefined];
+}
+
+function checkTableFieldsReferences(fields: TableFields, position: Position): [true, TableField | TableFieldType, Reference] | [false, undefined, undefined] {
+	for (const field of fields) {
+		if (!field.NameStart || !field.NameEnd) {
+			continue;
+		}
+
+		const [isReference, reference] = checkReferences(field.References, position);
+		if (isReference) {
+			return [true, field, reference];
+		}
+	}
+
+	return [false, undefined, undefined];
+}
+
+function checkTableFields(fields: TableFields, position: Position): [true, TableField | TableFieldType] | [false, undefined] {
+	for (const field of fields) {
+		if (!field.Start || !field.End) {
+			continue;
+		}
+		if (!field.NameStart || !field.NameEnd) {
+			continue;
+		}
+
+		if (isInBounds(field.Start, field.End, position)) {
+			return [true, field];
+		}
+	}
+
+	return [false, undefined];
+}
+
 export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
 	for (const node of ast.Tokens) {
-		if (!node.Start || !node.End) {
+		if (node.Type !== "Variable Declaration") {
+			continue;
+		}
+		if (!node.Start || !node.End || !node.NameStart || !node.NameEnd) {
 			continue;
 		}
 
 		const isHere = isInBounds(node.Start, node.End, position);
 		if (!isHere) {
-			if (node.Type === "Variable Declaration") {
-				for (const reference of node.References) {
-					if (!node.NameStart || !node.NameEnd) {
-						continue;
-					}
-					if (reference.FileUri !== getCurrentUri()) {
-						continue;
-					}
-					if (!isInBounds(reference.Start, reference.End, position)) {
-						continue;
-					}
+			const [isReference, reference] = checkReferences(node.References, position);
+			if (isReference) {
+				return {
+					Node: node,
+					NodeLocation: Range.create(node.Start, node.End),
+					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+					RawValue: node.RawValue,
+					ReferenceLocation: Range.create(reference.Start, reference.End),
+					References: node.References,
+				};
+			}
 
+			if (node.VariableType.TypeValue.Type.Type === "Table") {
+				const [isReference, field, reference] = checkTableFieldsReferences(node.VariableType.TypeValue.Type.Value, position);
+				if (isReference) {
 					return {
-						Node: node,
-						NodeLocation: Range.create(node.Start, node.End),
-						NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-						RawValue: node.RawValue,
+						Node: field,
+						NodeLocation: Range.create(field.Start!, field.End!),
+						NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
+						RawValue: field.Value.RawValue,
 						ReferenceLocation: Range.create(reference.Start, reference.End),
-						References: node.References,
+						References: field.References,
 					};
-				}
-
-				if (node.VariableType.TypeValue.Type.Type === "Table") {
-					for (const field of node.VariableType.TypeValue.Type.Value) {
-						for (const reference of field.References) {
-							if (!field.NameStart || !field.NameEnd) {
-								continue;
-							}
-							if (reference.FileUri !== getCurrentUri()) {
-								continue;
-							}
-							if (!isInBounds(reference.Start, reference.End, position)) {
-								continue;
-							}
-
-
-							return {
-								Node: field,
-								NodeLocation: Range.create(field.Start!, field.End!),
-								NodeNameLocation: Range.create(field.NameStart, field.NameEnd),
-								RawValue: field.Value.RawValue,
-								ReferenceLocation: Range.create(reference.Start, reference.End),
-								References: field.References,
-							};
-						}
-					}
-
-					continue;
 				}
 			}
 
 			continue;
 		}
 
-		if (node.Type === "Variable Declaration") {
-			if (!node.NameStart || !node.NameEnd) {
-				continue;
-			}
-
-			if (node.VariableValue.Value.Type === "Function") {
-				return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
-					Node: node,
-					NodeLocation: Range.create(node.Start, node.End),
-					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-					RawValue: node.RawValue,
-					ReferenceLocation: Range.create(node.Start, node.End),
-					References: node.References,
-				};
-			} else if (node.VariableType.TypeValue.Type.Type === "Table") {
-				for (const field of node.VariableType.TypeValue.Type.Value) {
-					if (!field.Start || !field.End) {
-						continue;
-					}
-					if (!field.NameStart || !field.NameEnd) {
-						continue;
-					}
-
-					if (isInBounds(field.Start, field.End, position)) {
-						return {
-							Node: field,
-							NodeLocation: Range.create(node.Start, node.End),
-							NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-							RawValue: tableFieldToString(field, " = ", false),
-							ReferenceLocation: Range.create(field.Start, field.End),
-							References: field.References,
-						};
-					}
-				}
-
+		if (node.VariableValue.Value.Type === "Function") {
+			return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
+				Node: node,
+				NodeLocation: Range.create(node.Start, node.End),
+				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+				RawValue: node.RawValue,
+				ReferenceLocation: Range.create(node.Start, node.End),
+				References: node.References,
+			};
+		} else if (node.VariableType.TypeValue.Type.Type === "Table") {
+			const [isField, field] = checkTableFields(node.VariableType.TypeValue.Type.Value, position);
+			if (isField) {
 				return {
-					Node: node,
+					Node: field,
 					NodeLocation: Range.create(node.Start, node.End),
 					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-					RawValue: node.RawValue,
-					ReferenceLocation: Range.create(node.Start, node.End),
-					References: node.References,
-				};
-			} else {
-				return {
-					Node: node,
-					NodeLocation: Range.create(node.Start, node.End),
-					NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-					RawValue: node.RawValue,
-					ReferenceLocation: Range.create(node.Start, node.End),
-					References: node.References,
+					RawValue: tableFieldToString(field, " = ", false),
+					ReferenceLocation: Range.create(field.Start!, field.End!),
+					References: field.References,
 				};
 			}
 		}
 
-		return;
+		return {
+			Node: node,
+			NodeLocation: Range.create(node.Start, node.End),
+			NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+			RawValue: node.RawValue,
+			ReferenceLocation: Range.create(node.Start, node.End),
+			References: node.References,
+		};
 	}
 
 	return;
