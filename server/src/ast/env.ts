@@ -16,6 +16,7 @@ import { readFile } from "fs";
 import * as path from "path";
 import { getTypeFromValue } from "./parser/as-type";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
+import { logTable } from "../utilities";
 
 const ApiDumb: APIDump = require("../api/api-dump.json");
 const DataTypesJson: DataTypes = require("../api/data-types.json");
@@ -226,4 +227,5 @@ export {
 	Enums,
 	globals,
 	metatables,
+	globalTypes,
 };

@@ -1,7 +1,8 @@
 import { AST, TypeDefinition } from "../../types";
 import { addDiagnostic, getCurrentUri } from "../../diagnostics";
 import { DiagnosticSeverity, Range } from "vscode-languageserver";
-import { TypeDefinitionBuilder } from "../../classes";
+import { AstBuilder, TypeDefinitionBuilder } from "../../classes";
+import { globalTypes } from "../../ast/env";
 
 const BUILT_IN_TYPES = [
 	"unknown",
@@ -18,7 +19,7 @@ const BUILT_IN_TYPES = [
 ];
 
 //TODO: Add support for cross-file types when modules are implemented
-export function findType(typeName: string, AST: AST, currentLocation: Range): TypeDefinition | undefined {
+function _findType(typeName: string, AST: AST, currentLocation: Range): TypeDefinition | undefined {
 	for (let i = 0; i < AST.Tokens.length; i++) {
 		const element = AST.Tokens[i];
 		if (element.Type !== "Type") { continue; }
@@ -55,4 +56,13 @@ export function findType(typeName: string, AST: AST, currentLocation: Range): Ty
 
 		return;
 	}
+}
+
+export function findType(typeName: string, AST: AST, currentLocation: Range): TypeDefinition | undefined {
+	const completeAST: AST = {
+		Tokens: [...AST.Tokens, ...globalTypes],
+		Parent: AST.Parent,
+		Uri: AST.Uri,
+	};
+	return _findType(typeName, completeAST, currentLocation);
 }

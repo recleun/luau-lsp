@@ -293,9 +293,9 @@ export function parse(code: string, stopLog?: boolean): AST {
 		Tokens: [],
 	};
 	currentAst = AST;
-	if (stopLog) {
-		AST.Tokens = [Enums, ...Constructors, ...globals];
-	}
+	// if (stopLog) {
+	// 	AST.Tokens = [Enums, ...Constructors, ...globals];
+	// }
 
 	const lexer = new LuauLexer(CharStreams.fromString(code));
 	const tokens = new CommonTokenStream(lexer);
@@ -309,7 +309,7 @@ export function parse(code: string, stopLog?: boolean): AST {
 	if (!stopLog) {
 		logTable(AST);
 	}
-	logTable(AST);
+	// logTable(AST);
 
 	return AST;
 }
