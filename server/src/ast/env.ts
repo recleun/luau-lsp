@@ -6,7 +6,8 @@ import {
 	Returns,
 	SimpleType,
 	TableFields,
-	TableType
+	TableType,
+	TypeDefinition
 } from "../types";
 import { APIDump } from "../types/ast/env/api-dump";
 import { DataTypes } from "../types/ast/env/data-types";
@@ -27,6 +28,7 @@ const Enums: VariableDeclaration = VariableDeclarationBuilder.create(
 	"Enum"
 );
 const Constructors: VariableDeclaration[] = [];
+const globalTypes: TypeDefinition[] = [];
 
 ApiDumb.Enums.forEach(enumItem => {
 	if (Enums.VariableValue.Value.Type !== "Table") { return; }
@@ -116,6 +118,55 @@ DataTypesJson.Constructors.forEach(constructor => {
 		constructor.Name,
 	));
 });
+DataTypesJson.DataTypes.forEach(dataType => {
+	const fields: TableFields = [];
+	dataType.Members.forEach(member => {
+		if (member.MemberType === "Function") {
+			const parameters: Parameters = [];
+			const returns: Returns = [];
+
+			member.Parameters?.forEach(parameter => {
+				parameters.push({
+					Type: "FunctionParameter",
+					Name: parameter.Name,
+					Optional: false,
+					ParameterType: TypeDefinitionBuilder.fromString(parameter.Type.Name, parameter.Type.Name),
+					IsVariadic: false,
+				});
+			});
+
+			const allReturns = member.TupleReturns || [];
+
+			if (member.ReturnType !== undefined) {
+				allReturns.push({ Name: member.ReturnType.Name });
+			}
+
+			allReturns.forEach(returnItem => {
+				returns.push({
+					Type: "FunctionReturn",
+					IsVariadic: false,
+					Optional: false,
+					ReturnType: TypeDefinitionBuilder.fromString(returnItem.Name, returnItem.Name),
+				});
+			});
+
+			fields.push({
+				Key: member.Name,
+				Value: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asFunction(parameters, returns)),
+				References: [],
+			});
+		} else {
+			fields.push({
+				Key: member.Name,
+				Value: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asSimple(member.ValueType?.Name || "any")),
+				References: [],
+			});
+		}
+	});
+
+	const tableType = PossibleTypesBuilder.asTable(fields, dataType.Name);
+	globalTypes.push(TypeDefinitionBuilder.fromPossibleType(tableType, dataType.Name));
+});
 
 const globals: AstTokens = [];
 const metatables: AstTokens = [];
@@ -124,25 +175,28 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err,
 	if (err) throw err;
 
 	const AST = parse(code, true);
-	AST.Tokens.map(token => {
-		if (token.Type === "Type") {
-			if (token.TypeName === "Type") {
-				token.TypeName = "type";
-			} else if (token.TypeName === "Typeof") {
-				token.TypeName = "typeof";
-			}
+	// AST.Tokens.map(token => {
+	// 	if (token.Type === "Variable Declaration") {
+	// 		token.IsGlobal = true;
+	// 	}
+	// 	if (token.Type === "Type") {
+	// 		if (token.TypeName === "Type") {
+	// 			token.TypeName = "type";
+	// 		} else if (token.TypeName === "Typeof") {
+	// 			token.TypeName = "typeof";
+	// 		}
 
-			return VariableDeclarationBuilder.create(
-				token.TypeName,
-				true,
-				token,
-				ValueBuilder.fromTypeDefinition(token),
-				token.RawValue.replace(/type (.*?)\s*:/, "$1")
-			);
-		}
+	// 		return VariableDeclarationBuilder.create(
+	// 			token.TypeName,
+	// 			true,
+	// 			token,
+	// 			ValueBuilder.fromTypeDefinition(token),
+	// 			token.RawValue.replace(/type (.*?)\s*:/, "$1")
+	// 		);
+	// 	}
 
-		return token;
-	});
+	// 	return token;
+	// });
 
 	globals.push(...AST.Tokens);
 });
@@ -150,19 +204,19 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err
 	if (err) throw err;
 
 	const AST = parse(code, true);
-	AST.Tokens.map(token => {
-		if (token.Type === "Type") {
-			return VariableDeclarationBuilder.create(
-				token.TypeName,
-				true,
-				token,
-				ValueBuilder.fromTypeDefinition(token),
-				token.RawValue.replace(/type (.*?)\s*:/, "$1")
-			);
-		}
+	// AST.Tokens.map(token => {
+	// 	if (token.Type === "Type") {
+	// 		return VariableDeclarationBuilder.create(
+	// 			token.TypeName,
+	// 			true,
+	// 			token,
+	// 			ValueBuilder.fromTypeDefinition(token),
+	// 			token.RawValue.replace(/type (.*?)\s*:/, "$1")
+	// 		);
+	// 	}
 
-		return token;
-	});
+	// 	return token;
+	// });
 
 	metatables.push(...AST.Tokens);
 });

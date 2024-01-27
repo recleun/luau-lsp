@@ -42,6 +42,7 @@ import { addDiagnostic, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
+import { Enums, Constructors, globals } from "./env";
 
 let currentAst: AST;
 
@@ -238,8 +239,8 @@ class Listener implements LuauListener {
 		let character = allNamesList.start.charPositionInLine;
 		let line = allNamesList.start.line - 1;
 		names.forEach(name => {
-			const value = values[i].Value ?? ValueBuilder.fromString("nil");
-			const type = values[i].Type ?? name.Type ?? getTypeFromValue(value)[0]; // TODO: Send errors.
+			const value = values[i]?.Value ?? ValueBuilder.fromString("nil");
+			const type = values[i]?.Type ?? name.Type ?? getTypeFromValue(value)[0]; // TODO: Send errors.
 			const variable: VariableDeclaration = VariableDeclarationBuilder.create(
 				name.Name,
 				false,
@@ -292,6 +293,9 @@ export function parse(code: string, stopLog?: boolean): AST {
 		Tokens: [],
 	};
 	currentAst = AST;
+	if (stopLog) {
+		AST.Tokens = [Enums, ...Constructors, ...globals];
+	}
 
 	const lexer = new LuauLexer(CharStreams.fromString(code));
 	const tokens = new CommonTokenStream(lexer);
@@ -305,6 +309,7 @@ export function parse(code: string, stopLog?: boolean): AST {
 	if (!stopLog) {
 		logTable(AST);
 	}
+	logTable(AST);
 
 	return AST;
 }

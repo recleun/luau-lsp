@@ -75,10 +75,9 @@ export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, l
 
 			astTokens.push(...ast.Tokens);
 		}
-		const allTokens = [...globals, ...astTokens.reverse()];
 
-		for (let i = allTokens.length - 1; i >= 0; i--) {
-			const token = allTokens[i];
+		for (let i = 0; i < astTokens.length; i++) {
+			const token = astTokens[i];
 			if (token.Type !== "Variable Declaration") { continue; }
 			if (token.VariableName !== name) { continue; }
 			if (token.VariableType.TypeValue.Type.Type !== "Function") { break; }
@@ -99,8 +98,8 @@ export function asForInLoop(ast: AST, forInExpression: ForInExpressionContext, l
 			if (normalizedExpression.Value.Type === "Simple") {
 				const tableName = normalizedExpression.Value.RawValue;
 
-				for (let i = 0; i < allTokens.length; i++) {
-					const element = allTokens[i];
+				for (let i = 0; i < astTokens.length; i++) {
+					const element = astTokens[i];
 					if (element.Type !== "Variable Declaration") { continue; }
 					if (element.VariableName !== tableName) { continue; }
 					if (element.VariableType.TypeValue.Type.Type !== "Table") { break; }

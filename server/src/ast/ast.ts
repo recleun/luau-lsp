@@ -3,16 +3,19 @@ import { AST } from "../types";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { URI } from "vscode-languageserver";
 import { Constructors, Enums, globals } from "./env";
+import { logTable } from "../utilities";
 
 const ASTs: { [key: URI]: AST } = {};
 
 export function generateAST(parameter: TextDocument) {
-	const AST = parseFile(parameter, false);
+	const AST = parseFile(parameter, true);
 	ASTs[parameter.uri] = {
-		Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
+		Tokens: AST.Tokens, //[...AST.Tokens, Enums, ...Constructors, ...globals],
 		Uri: parameter.uri,
 		Parent: AST.Parent,
 	};
+
+	// logTable(ASTs[parameter.uri].Tokens);
 }
 
 export function getAST(document: TextDocument): AST;

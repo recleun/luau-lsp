@@ -1,6 +1,9 @@
-type game = DataModel
-type getmetatable = (t: table) -> table?
-type error = (message: any, level: number?) -> ()
+local game: DataModel
+function getmetatable(t: {}): {}?
+end
+function error(message: any, level: number?): ()
+end
+
 type debug = {
 	info:
 		((thread: thread, level: number, options: string) -> ...any)
@@ -14,6 +17,8 @@ type debug = {
 	setmemorycategory: (tag: string) -> (),
 	resetmemorycategory: () -> (),
 }
+local debug: debug
+
 type task = {
 	defer: (f: () -> () | thread, ...any) -> any,
 	desynchronize: () -> (),
@@ -23,10 +28,17 @@ type task = {
 	wait: (sec: number?) -> number,
 	cancel: (thread: thread) -> ()
 }
-type tonumber = (value: any, radix: number?) -> number
-type pcall = (f: () -> (), ...any) -> (boolean, ...any)
-type Enum = Enums
-type collectgarbage = (mode: string) -> number
+local task: task
+
+function tonumber(value: any, radix: number?): number
+end
+function pcall(f: () -> (), ...: any...): (boolean, ...any)
+end
+
+--@deprecated
+local function collectgarbage(mode: string): number
+end
+
 type utf8 = {
 	char: (code: number, ...number) -> string,
 	charpattern: string,
@@ -38,14 +50,23 @@ type utf8 = {
 	nfcnormalize: (str: string) -> string,
 	nfdnormalize: (str: string) -> string,
 }
-type getfenv = (target: any?) -> { [string]: any }
-type plugin = Plugin
-type pairs = (t: table) -> ((table, any?) -> (any, any), table, nil)
-type gcinfo = () -> number
-type ypcall = (f: () -> (), ...any) -> (boolean, ...any)
-type xpcall = (f: () -> (), err: () -> (), ...any) -> (boolean, ...any)
-type workspace = Workspace
-type _VERSION = string
+local utf8: utf8
+
+local function getfenv(target: any?): { [string]: any }
+end
+
+local plugin: Plugin
+
+local function pairs<T>(t: T): ((T, any?) -> (any, any), T, nil)
+end
+local function gcinfo(): number
+end
+local function ypcall(f: () -> (), ...: any...): (boolean, ...any)
+end
+local function xpcall(f: () -> (), err: () -> (), ...: any...): (boolean, ...any)
+end
+local workspace: Workspace
+local _VERSION: string
 type string = {
 	pack: (fmt: string, ...any) -> string,
 	packsize: (fmt: string) -> number,
@@ -70,45 +91,61 @@ type string = {
 	lower: (s: string) -> string,
 	match: (s: string, pattern: string, init: number?) -> string?,
 }
-type warn = (...any) -> ()
-type UserSettings = () -> UserSettings
-type tostring = (value: any) -> string
-type wait = (seconds: number?) -> (number, number)
-type unpack = (list: table, i: number?, j: number?) -> ...any
-type tick = () -> number
-type newproxy = (addmt: boolean) -> any
-type time = () -> number
-type elapsedTime = () -> number
+local string: string
+local function warn(...: any...): ()
+end
+local function UserSettings(): UserSettings
+end
+local function tostring(value: any): string
+end
+local function wait(seconds: number?): (number, number)
+end
+local function unpack<T>(list: {T}, i: number?, j: number?): ...T
+end
+local function tick(): number
+end
+local function newproxy(addmt: boolean): any
+end
+local function time(): number
+end
+local function elapsedTime(): number
+end
 type table = {
-	maxn: (t: table) -> number,
-	find: (t: table, value: any, init: number?) -> number?,
-	foreach: (t: table, f: (any, any) -> ()) -> (),
-	foreachi: (t: table, f: (number, any) -> ()) -> (),
-	getn: (t: table) -> number,
-	concat: (t: table, sep: string?, i: number?, j: number?) -> string,
+	maxn: (t: {}) -> number,
+	find: (t: {}, value: any, init: number?) -> number?,
+	foreach: (t: {}, f: (any, any) -> ()) -> (),
+	foreachi: (t: {}, f: (number, any) -> ()) -> (),
+	getn: (t: {}) -> number,
+	concat: (t: {}, sep: string?, i: number?, j: number?) -> string,
 	insert:
-		((t: table, value: any) -> ())
-		& ((t: table, pos: number, value: any) -> ()),
-	move: (a1: table, f: number, e: number, t: number, a2: table?) -> (),
+		((t: {}, value: any) -> ())
+		& ((t: {}, pos: number, value: any) -> ()),
+	move: (a1: {}, f: number, e: number, t: number, a2: {}?) -> (),
 	pack: (...any) -> { n: number, [number]: any },
-	remove: (t: table, pos: number?) -> any?,
-	sort: (t: table, comp: ((any, any) -> boolean)?) -> (),
-	unpack: (t: table, i: number?, j: number?) -> ...any,
-	clear: (t: table) -> (),
-	clone: (t: table) -> table,
-	create: (count: number, value: any?) -> table,
-	freeze: (t: table) -> table,
-	isfrozen: (t: table) -> boolean
+	remove: (t: {}, pos: number?) -> any?,
+	sort: (t: {}, comp: ((any, any) -> boolean)?) -> (),
+	unpack: (t: {}, i: number?, j: number?) -> ...any,
+	clear: (t: {}) -> (),
+	clone: (t: {}) -> {},
+	create: (count: number, value: any?) -> {},
+	freeze: (t: {}) -> {},
+	isfrozen: (t: {}) -> boolean
 }
-type setfenv = (target: () -> () | number, env: { [string]: any }) -> () -> ()?
+local table: table
+local function setfenv(target: () -> () | number, env: { [string]: any }): () -> ()?
+end
 type os = {
 	clock: () -> number,
 	date: (format: string?, time: number?) -> string | DateTypeResult,
 	difftime: (t2: number | DateTypeResult, t1: number | DateTypeResult) -> number,
 	time: (t: DateTypeArg?) -> number,
 }
-type Type = (value: any) -> string
-type ipairs = (t: table) -> ((table, number) -> (number, any), table, number)
+local os: os
+
+local function type(value: any): string
+end
+local function ipairs<T>(t: T): ((T, number) -> (number, any), T, number)
+end
 type coroutine = {
 	create: (f: () -> ()) -> thread,
 	isyieldable: () -> boolean,
@@ -119,12 +156,19 @@ type coroutine = {
 	yield: (...any) -> ...any,
 	close: (thread: thread) -> (boolean, ...any),
 }
-type shared = any
-type Typeof = (value: any) -> string
-type spawn = (callback: () -> ()) -> ()
-type _G = table
-type settings = () -> GlobalSettings
-type require = (module: any) -> any
+local coroutine: coroutine
+local shared: any
+local function typeof(value: any): string
+end
+local function spawn(callback: () -> ()): ()
+end
+
+local _G: {}
+
+local function settings(): GlobalSettings
+end
+local function require(module: any): any
+end
 type bit32 = {
 	lshift: (x: number, disp: number) -> number,
 	rrotate: (x: number, disp: number) -> number,
@@ -139,13 +183,22 @@ type bit32 = {
 	replace: (n: number, v: number, field: number, width: number?) -> number,
 	lrotate: (x: number, disp: number) -> number,
 }
-type select = (index: string | number, ...any) -> any
-type setmetatable = (table: table, metatable: table | nil) -> table
-type rawset = (table: table, index: any, value: any) -> table
-type rawget = (table: table, index: any) -> any
-type rawlen = (obj: string | table) -> number
-type rawequal = (v1: any, v2: any) -> boolean
-type print = (...any) -> ()
+local bit32: bit32
+local function select(index: string | number, ...: any...): any
+end
+local function setmetatable(t: {}, metatable: {} | nil): {}
+end
+local function rawset(t: {}, index: any, value: any): {}
+end
+local function rawget(t: {}, index: any): any
+end
+local function rawlen(obj: string | {}): number
+end
+local function rawequal(v1: any, v2: any): boolean
+end
+local function print(...: any...): ()
+end
+
 type math = {
 	exp: (x: number) -> number,
 	floor: (x: number) -> number,
@@ -182,13 +235,23 @@ type math = {
 	cosh: (x: number) -> number,
 	deg: (x: number) -> number,
 }
-type next = (t: table, lastKey: any?) -> (any, any)
-type loadstring = (src: string, chunkname: string?) -> (() -> ()?, string?)
-type delay = (delayTime: number?, callback: () -> ()) -> ()
-type script = LuaSourceContainer
-type assert = (value: any, errorMessage: string?) -> any
+local math: math
 
-type DateTypeArg = {
+local function next<K, V>(t: {[K]: V}, lastKey: K?): (K, V)
+end
+local function loadstring(src: string, chunkname: string?): (() -> ()?, string?)
+end
+
+--@deprecated
+local function delay(delayTime: number?, callback: () -> ()): ()
+end
+
+local script: LuaSourceContainer
+
+local function assert(value: any, errorMessage: string?): any
+end
+
+export type DateTypeArg = {
 	day: number?,
 	hour: number?,
 	isdst: boolean?,
@@ -200,7 +263,7 @@ type DateTypeArg = {
 	year: number?,
 }
 
-type DateTypeResult = {
+export type DateTypeResult = {
 	day: number,
 	hour: number,
 	isdst: boolean,

@@ -71,7 +71,7 @@ funcbody: (OPEN_ANGLE_BRACKET genericTypeList CLOSE_ANGLE_BRACKET)? functionPara
 
 functionParameters: OPEN_PARENTHESIS (parameterList)? CLOSE_PARENTHESIS;
 parameterList: allNamesList (COMMA variadicParameter)? | variadicParameter;
-variadicParameter: VARIADIC_EXPRESSION (COLON type)?;
+variadicParameter: VARIADIC_EXPRESSION (COLON type VARIADIC_EXPRESSION?)?;
 
 functionParametersType: OPEN_PARENTHESIS (parameterListType)? CLOSE_PARENTHESIS;
 parameterListType: allNamesListType (COMMA variadicParameterType)? | variadicParameterType;
@@ -124,7 +124,7 @@ tableIndexer: OPEN_SQUARE_BRACKETS type CLOSE_SQUARE_BRACKETS COLON type;
 tableProperty: NAME COLON type;
 tablePropOrIndexer: tableIndexer | tableProperty;
 propList: tablePropOrIndexer (fieldsep tablePropOrIndexer)* (fieldsep)?;
-tableType: OPEN_CURLY_BRACKETS (type | propList) CLOSE_CURLY_BRACKETS;
+tableType: OPEN_CURLY_BRACKETS (type | propList)? CLOSE_CURLY_BRACKETS;
 
 typedName: NAME COLON type;
 optionalTypedName: NAME (COLON type)?;
