@@ -27,6 +27,7 @@ import { buildFunction } from "./as-function";
 import { asType, getTypeFromValue } from "./as-type";
 import { addDiagnostic, getCurrentUri } from "../../diagnostics";
 import { TypeDefinitionBuilder } from "../../classes";
+import { globals } from "../env";
 
 type AntlrNode = {
 	start: {
@@ -191,11 +192,6 @@ export function normalizeExpression1(expressions: Expression1Context[], ast: AST
 					RawValue: string.text,
 					Value: string.text
 				},
-				Type: TypeDefinitionBuilder.fromPossibleType({
-					Type: "Simple",
-					RawValue: "string",
-					Value: "string",
-				}),
 			});
 		} else if ((number = expression.NUMBER())) {
 			normalizedExpressions.push({

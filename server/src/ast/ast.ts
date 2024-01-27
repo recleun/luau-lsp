@@ -10,7 +10,7 @@ const ASTs: { [key: URI]: AST } = {};
 export function generateAST(parameter: TextDocument) {
 	const AST = parseFile(parameter, false);
 	ASTs[parameter.uri] = {
-		Tokens: AST.Tokens, //[...AST.Tokens, Enums, ...Constructors, ...globals],
+		Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
 		Uri: parameter.uri,
 		Parent: AST.Parent,
 	};

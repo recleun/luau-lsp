@@ -175,7 +175,7 @@ const metatables: AstTokens = [];
 readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err, code) => {
 	if (err) throw err;
 
-	const AST = parse(code, true);
+	const AST = parse(code, false);
 	// AST.Tokens.map(token => {
 	// 	if (token.Type === "Variable Declaration") {
 	// 		token.IsGlobal = true;
@@ -199,6 +199,14 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err,
 	// 	return token;
 	// });
 
+	// for (const node of AST.Tokens) {
+	// 	if (node.Type !== "Type" || node.TypeName !== "string") {
+	// 		continue;
+	// 	}
+	// 	globalTypes.push(node);
+	// 	break;
+	// }
+
 	globals.push(...AST.Tokens);
 });
 readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err, code) => {
@@ -221,6 +229,8 @@ readFile(path.join(path.resolve(__dirname, '..'), "env/meta.luau"), "utf8", (err
 
 	metatables.push(...AST.Tokens);
 });
+
+// logTable(globals);
 
 export {
 	Constructors,

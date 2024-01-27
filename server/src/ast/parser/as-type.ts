@@ -24,6 +24,7 @@ import {
 import { DiagnosticSeverity, LSPAny, Position, Range } from "vscode-languageserver";
 import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder } from "../../classes";
 import { getEnd, getLocation } from "./as-expression";
+import { globals } from "../env";
 
 interface ErrorMessage {
 	Text: string,
@@ -191,6 +192,12 @@ export function getTypeFromValue(value: PossibleTypes): [TypeDefinition, ErrorMe
 	}
 
 	if (isString(value.RawValue)) {
+		for (const node of globals) {
+			if (node.Type === "Type" && node.TypeName === "string") {
+				return [node, getEscapeErrors(value.RawValue)];
+			}
+		}
+
 		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
 			RawValue: "string",

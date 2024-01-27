@@ -274,3 +274,5 @@ export type DateTypeResult = {
 	yday: number,
 	year: number,
 }
+
+--TODO: Add buffer type.

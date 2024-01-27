@@ -83,3 +83,5 @@ type CFrame = {
 	__add: (CFrame, Vector3) -> CFrame,
 	__sub: (CFrame, Vector3) -> CFrame,
 }
+
+--TODO: Add buffer type (if needed).

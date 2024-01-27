@@ -46,12 +46,12 @@ export function getCompletionItems(documents: TextDocuments<TextDocument>, textD
 		if (token.Type !== "Variable Declaration") { return; }
 
 		if (isTableField) {
-			if (token.VariableValue.Value.Type !== "Table") { return; }
+			if (token.VariableType.TypeValue.Type.Type !== "Table") { return; }
 
 			const tableName = textBeforeCursor.match(/^(.*?)[.:]/);
 			if (tableName && token.VariableName !== tableName[1]) { return; }
 
-			const values = tryGetFinalValue(textBeforeCursor, token.VariableValue.Value.Value);
+			const values = tryGetFinalValue(textBeforeCursor, token.VariableType.TypeValue.Type.Value);
 
 			for (const value of values) {
 				const key = toString(value.Key);
