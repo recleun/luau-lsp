@@ -1,4 +1,4 @@
-import { CustomArray } from "../global-types";
+import { CustomArray } from "../../global-types";
 import { TypeDefinition } from "./possible-type";
 
 export interface Parameter {

@@ -1,5 +1,6 @@
-import { CustomArray } from "../global-types";
-import { AST, Parameters, ReferenceableASTNode, Referenceable, Returns } from "../parse-types";
+import { CustomArray } from "../../global-types";
+import { AST, Parameters, Returns } from "../../parse-types";
+import { ReferenceableASTNode, Referenceable } from "./reference";
 
 interface TableFieldBase extends ReferenceableASTNode {
 	Key: TableKey,
@@ -50,6 +51,15 @@ export interface TypeDefinition extends Referenceable {
 	RawValue: string,
 	IsExported: boolean,
 	Generics: Generic[],
+}
+
+export interface VariableDeclaration extends Referenceable {
+	Type: "Variable Declaration",
+	VariableName: string,
+	IsGlobal: boolean,
+	VariableType: TypeDefinition,
+	VariableValue: Value,
+	RawValue: string,
 }
 
 export interface Value {
