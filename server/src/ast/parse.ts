@@ -62,38 +62,14 @@ class ErrorListener implements ANTLRErrorListener<Token> {
 		msg: string,
 		e?: RecognitionException
 	): void {
-		// (e?.message ?? "").replace(/[\r]?[\n\s]$/g, match => {
-		// 	switch (match) {
-		// 		case "\\s":
-		// 			charPositionInLine--;
-		// 			break;
-		// 		default:
-		// 			line--;
-		// 			break;
-		// 	}
-
-		// 	return "";
-		// });
-		// if (offendingSymbol) {
-		// 	log(offendingSymbol.startIndex);
-		// 	const inputStream = recognizer.inputStream!.toString();
-		// 	const lines = inputStream.split('\n');
-		// 	logTable(lines);
-
-		// 	for (let i = offendingSymbol.startIndex; i > offendingSymbol.stopIndex; i--) {
-		// 		if (charPositionInLine === 0) {
-		// 			line--;
-		// 			charPositionInLine = lines[line - 1].length - 1;
-		// 		} else {
-		// 			charPositionInLine--;
-		// 		}
-		// 	}
-		// }
-
-		const position = Position.create(line, charPositionInLine);
+		const start = Position.create(line - 1, charPositionInLine);
+		let end = start;
+		if (offendingSymbol && offendingSymbol.text) {
+			end = getEnd(offendingSymbol.text, start);
+		}
 
 		addDiagnostic({
-			range: Range.create(position, position),
+			range: Range.create(start, end),
 			message: msg,
 			severity: DiagnosticSeverity.Error,
 		});
