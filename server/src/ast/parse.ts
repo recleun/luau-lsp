@@ -146,7 +146,7 @@ class Listener implements LuauListener {
 	exitGlobalFunction(ctx: GlobalFunctionContext) {
 		if (ctx.exception) { return; }
 
-		const functionData = buildFunction(ctx.funcbody(), currentAst);
+		const functionData = buildFunction(ctx.funcbody(), currentAst.Parent!, currentAst);
 		currentAst = currentAst.Parent!;
 		const name = ctx.funcname();
 		const start = getEnd(
@@ -177,7 +177,7 @@ class Listener implements LuauListener {
 	exitLocalFunction(ctx: LocalFunctionContext) {
 		if (ctx.exception) { return; }
 
-		const functionData = buildFunction(ctx.funcbody(), currentAst);
+		const functionData = buildFunction(ctx.funcbody(), currentAst.Parent!, currentAst);
 		currentAst = currentAst.Parent!;
 
 		const name = ctx.NAME();
