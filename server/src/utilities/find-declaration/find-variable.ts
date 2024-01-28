@@ -4,6 +4,7 @@ import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { tableKeyToString } from "../to-string";
 import { AstBuilder } from "../../classes";
 import { Enums, Constructors, globals } from "../../ast/env";
+import { getEnd } from "../../ast/parser/as-expression";
 
 function _findVariable(variableName: string, AST: AST, currentLocation: Range): VariableDeclaration | undefined {
 	for (let i = AST.Tokens.length - 1; i >= 0; i--) {
@@ -15,10 +16,7 @@ function _findVariable(variableName: string, AST: AST, currentLocation: Range): 
 		if (uri) {
 			const actualLocation = Range.create(
 				currentLocation.start,
-				Position.create(
-					currentLocation.end.line,
-					currentLocation.start.character + variableName.length
-				)
+				getEnd(variableName, currentLocation.start)
 			);
 			element.References.push({
 				FileUri: uri,
