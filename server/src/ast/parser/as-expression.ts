@@ -11,6 +11,7 @@ import {
 } from "../../types";
 import {
 	findVariable,
+	getCleanRawValue,
 	isTypeDefinition,
 	log,
 	logTable,
@@ -373,13 +374,16 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 	}
 
 	let indexedKey;
+	let offset = 0;
 
 	const name = varSuffex.NAME();
 	let expression;
 	if (name) {
 		indexedKey = name.text;
 	} else if ((expression = varSuffex.expression())) {
-		indexedKey = normalizeExpression([expression], ast)[0].Value.RawValue.replace(/^(?:(?:\[=*\[])|['"`])|(?:(?:\]=*\]])|['"`])$/g, "");
+		const rawValue = normalizeExpression([expression], ast)[0].Value.RawValue;
+		indexedKey = getCleanRawValue(rawValue);
+		offset = rawValue.length - indexedKey.length;
 	}
 
 	if (indexedKey) {
@@ -402,7 +406,7 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 						},
 						End: {
 							line: varSuffex.stop.line - 1,
-							character: varSuffex.start.charPositionInLine + 1 + key.length,
+							character: varSuffex.start.charPositionInLine + 1 + key.length + offset,
 						},
 					});
 				}
@@ -452,7 +456,6 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: T
 			}
 		}
 	}
-
 
 	if (finalType.TypeValue.Type.Type === "Function") {
 		finalTypes = [];

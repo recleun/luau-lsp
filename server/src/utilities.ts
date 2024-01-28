@@ -10,3 +10,13 @@ export function wrapInCodeBlocks(code: string, language: string="lua"): string {
 		"```"
 	].join("\n");
 }
+
+/**
+ * Takes a raw value and removes the luau string characters.
+ *
+ * @param rawValue
+ * @returns
+ */
+export function getCleanRawValue(rawValue: string): string {
+	return rawValue.replace(/^(?:(?:\[=*\[])|['"`])|(?:(?:\]=*\]])|['"`])$/g, "");
+}
