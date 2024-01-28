@@ -175,7 +175,7 @@ const metatables: AstTokens = [];
 readFile(path.join(path.resolve(__dirname, '..'), "env/env.luau"), "utf8", (err, code) => {
 	if (err) throw err;
 
-	const AST = parse(code, false);
+	const AST = parse(code, true);
 	// AST.Tokens.map(token => {
 	// 	if (token.Type === "Variable Declaration") {
 	// 		token.IsGlobal = true;

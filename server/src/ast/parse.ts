@@ -239,7 +239,7 @@ class Listener implements LuauListener {
 		let character = allNamesList.start.charPositionInLine;
 		let line = allNamesList.start.line - 1;
 		names.forEach(name => {
-			const value = values[i]?.Value ?? ValueBuilder.fromString("nil");
+			const value = values[i]?.Value ?? PossibleTypesBuilder.asSimple("nil", "nil");
 			const type = values[i]?.Type ?? name.Type ?? getTypeFromValue(value)[0]; // TODO: Send errors.
 			const variable: VariableDeclaration = VariableDeclarationBuilder.create(
 				name.Name,

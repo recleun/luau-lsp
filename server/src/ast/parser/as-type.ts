@@ -1,4 +1,4 @@
-import { findType, log, toString } from "../../utilities";
+import { findType, log, logTable, toString } from "../../utilities";
 import { functionTypeToString } from "../../utilities";
 import {
 	DiagnosticData,

@@ -12,6 +12,7 @@ import {
 import {
 	findVariable,
 	isTypeDefinition,
+	logTable,
 	tableFieldsToString,
 	tableKeyToString
 } from "../../utilities";
@@ -26,7 +27,7 @@ import {
 import { buildFunction } from "./as-function";
 import { asType, getTypeFromValue } from "./as-type";
 import { addDiagnostic, getCurrentUri } from "../../diagnostics";
-import { TypeDefinitionBuilder } from "../../classes";
+import { PossibleTypesBuilder, TypeDefinitionBuilder } from "../../classes";
 import { globals } from "../env";
 
 type AntlrNode = {
@@ -197,12 +198,14 @@ export function normalizeExpression1(expressions: Expression1Context[], ast: AST
 				}),
 			});
 		} else if ((prefixExp = expression.prefixexp())) {
-			const [value, type] = handlePrefixExp(ast, prefixExp);
+			const [types, value] = handlePrefixExp(ast, prefixExp);
+			for (const [i, type] of types.entries()) {
+				normalizedExpressions.push({
+					Value: value[i],
+					Type: type, //getTypeFromValue(value)[0],
+				});
+			}
 
-			normalizedExpressions.push({
-				Value: value,
-				Type: type, //getTypeFromValue(value)[0],
-			});
 		} else {
 			const value: PossibleTypes = {
 				Type: "Simple",
@@ -242,35 +245,38 @@ export function normalizeExpression1(expressions: Expression1Context[], ast: AST
 export function normalizeExpression(expressions: ExpressionContext[], ast: AST): NormalizedExpressions {
 	const normalizedExpressions: NormalizedExpressions = [];
 
+	let i = 0;
 	expressions.forEach(expression => {
 		const expression1 = expression.expression1();
-		const normalizeExpression = normalizeExpression1([expression1], ast)[0];
+		const normalizedExpression1s = normalizeExpression1([expression1], ast);
 
 		let type;
-		if ((type = expression.type())) {
-			normalizeExpression.Type = asType(type, ast);
-		}
+		if ((type = expression.type()) || normalizedExpression1s.length === 1) {
+			normalizedExpression1s[0].Type = type
+				? asType(type, ast)
+				: normalizedExpression1s[0].Type;
+			normalizedExpressions[i] = normalizedExpression1s[0];
 
-		normalizedExpressions.push(normalizeExpression);
+		} else {
+			normalizedExpressions.push(...normalizedExpression1s);
+		}
+		i++;
 	});
 
 	return normalizedExpressions;
 }
 
-export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [PossibleTypes, TypeDefinition] {
+export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [TypeDefinition[], PossibleTypes[]] {
 	const varOrExp = prefixExp.varOrExp();
 	const variable = varOrExp.var();
 	let expression: ExpressionContext | undefined;
 
-	// const startPosition = Position.create(prefixExp.start.line, prefixExp.start.charPositionInLine);
 	const startPosition = Position.create(prefixExp.start.line - 1, prefixExp.start.charPositionInLine);
-	const endPosition = Position.create(
-		prefixExp.start.line - 1,
-		startPosition.character + prefixExp.text.trim().length,
-	);
+	const endPosition = getEnd(prefixExp.text, startPosition);
 	const currentLocation = Range.create(startPosition, endPosition);
-	let finalType: TypeDefinition | undefined;
-	let finalValue: PossibleTypes | undefined;
+
+	let finalTypes: TypeDefinition[] | undefined;
+	let finalValues: PossibleTypes[] | undefined;
 
 	if (variable) {
 		const name = variable.NAME();
@@ -279,37 +285,38 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 		if (name) {
 			const variable = findVariable(name.text, currentAst, currentLocation);
 			if (variable) {
-				finalType = variable.VariableType;
-				finalValue = variable.VariableValue.Value;
+				finalTypes = [ variable.VariableType ];
+				finalValues = [ variable.VariableValue.Value ];
 			}
 
 		} else if ((expression = variable.expression())) {
 			const name = normalizeExpression([expression], currentAst)[0].Value.RawValue;
-			const table = findVariable(name, currentAst, currentLocation);
-			if (table?.VariableType.TypeValue.Type.Type === "Table") {
-				finalType = findVariable(name, currentAst, currentLocation)?.VariableType;
+			const variable = findVariable(name, currentAst, currentLocation);
+			if (variable?.VariableType.TypeValue.Type.Type === "Table") {
+				finalTypes = [ variable.VariableType ];
+				finalValues = [ variable.VariableType.TypeValue.Type ];
 			}
 		}
 
 		for (const suffex of variable.varSuffix()) {
-			if (!finalType) {
+			if (!finalTypes) {
 				break;
 			}
 
-			const result = handleVarSuffex(suffex, finalType);
+			const result = handleVarSuffex(suffex, finalTypes);
 			if (!result) {
 				break;
 			}
 
-			[finalType, finalValue] = result;
+			[finalTypes, finalValues] = result;
 		}
 
 	} else if ((expression = varOrExp.expression())) {
 		const normalizedExpression = normalizeExpression([expression], currentAst)[0];
 
 		const [type, errorMessages] = getTypeFromValue(normalizedExpression.Value);
-		finalValue = normalizedExpression.Value;
-		finalType = normalizedExpression.Type ?? type;
+		finalTypes = [ normalizedExpression.Type ?? type ];
+		finalValues = [ normalizedExpression.Value ];
 
 		errorMessages.forEach((errorMessage => {
 			addDiagnostic({
@@ -331,44 +338,42 @@ export function handlePrefixExp(currentAst: AST, prefixExp: PrefixexpContext): [
 	}
 
 	for (const nameAndArgs of prefixExp.nameAndArgs()) {
-		if (!finalType) {
+		if (!finalTypes) {
 			break;
 		}
 
-		finalValue = undefined;
-		finalType = handleNameAndArgs(nameAndArgs, finalType);
+		const results = handleNameAndArgs(nameAndArgs, finalTypes);
+		if (results) {
+			[finalTypes, finalValues] = results;
+		} else {
+			[finalTypes, finalValues] = [undefined, undefined];
+		}
 	}
 
 	return [
-		finalValue ?? {
-			Type: "Simple",
-			RawValue: "",
-			Value: ""
-		},
-		finalType ?? TypeDefinitionBuilder.fromPossibleType({
-			Type: "Simple",
-			RawValue: "any",
-			Value: "any",
-		})
+		finalTypes ?? [ TypeDefinitionBuilder.fromString("any") ],
+		finalValues ?? [ PossibleTypesBuilder.asSimple("") ],
 	];
 }
 
-export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalType: TypeDefinition): [TypeDefinition, PossibleTypes | undefined] | undefined {
-	let finalType: TypeDefinition | undefined = currentFinalType;
+export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: TypeDefinition[]): [TypeDefinition[], PossibleTypes[]] | undefined {
+	let finalTypes: TypeDefinition[] | undefined = currentFinalTypes;
+	let finalValues: PossibleTypes[] | undefined;
 	for (const nameAndArgs of varSuffex.nameAndArgs()) {
-		if (!finalType) {
+		if (!finalTypes) {
 			break;
 		}
 
-		finalType = handleNameAndArgs(nameAndArgs, finalType);
+		[finalTypes, finalValues] = handleNameAndArgs(nameAndArgs, finalTypes);
 	}
-	if (!finalType) {
+	if (!finalTypes) {
 		return;
 	}
 
+	//TODO: Handle expression.
 	const name = varSuffex.NAME();
-	if (name && finalType.TypeValue.Type.Type === "Table") {
-		for (const field of finalType.TypeValue.Type.Value) {
+	if (name && finalTypes[0] && finalTypes[0].TypeValue.Type.Type === "Table") {
+		for (const field of finalTypes[0].TypeValue.Type.Value) {
 			const key = tableKeyToString(field.Key);
 			if (key === name.text) {
 
@@ -392,22 +397,24 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalType: T
 
 				return (
 					isTypeDefinition(field.Value)
-					&& [field.Value, undefined]
-					|| [getTypeFromValue(value)[0], value]
+					&& [[ field.Value ], [ field.Value.TypeValue.Type ]]
+					|| [[ getTypeFromValue(value)[0] ], [ value ]]
 				);
 			}
 		}
-
 	}
 }
 
-export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalType: TypeDefinition): TypeDefinition | undefined {
+export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: TypeDefinition[]): [TypeDefinition[], PossibleTypes[]] | undefined {
 	const name = nameAndArgs.NAME();
+	let finalType = finalTypes[0];
+	let finalValues: PossibleTypes[] = [];
 	if (name && finalType.TypeValue.Type.Type === "Table") {
 		for (const field of finalType.TypeValue.Type.Value) {
 			const key = tableKeyToString(field.Key);
 			if (key === name.text) {
 				finalType = field.Value as TypeDefinition;
+				finalValues = [field.Value as PossibleTypes];
 
 				const uri = getCurrentUri();
 
@@ -430,8 +437,17 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalType: Ty
 		}
 	}
 
+
 	if (finalType.TypeValue.Type.Type === "Function") {
-		return finalType.TypeValue.Type.Value.Returns[0].ReturnType;
+		finalTypes = [];
+		finalValues = [];
+
+		finalType.TypeValue.Type.Value.Returns.forEach((_return) => {
+			finalTypes.push(_return.ReturnType);
+			finalValues.push(PossibleTypesBuilder.asSimple(""));
+		});
+
+		return [ finalTypes, finalValues ];
 	}
 	// TODO: Make it return both type and value separately.
 }

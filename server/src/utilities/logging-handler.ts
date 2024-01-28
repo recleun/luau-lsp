@@ -114,10 +114,12 @@ export function info(...parameters: (string | number | boolean)[]) {
  *
  * @param _connection
  */
-export function setup(_connection: Connection) {
+export function setup(_connection: Connection, ignoreQueue: boolean = false) {
 	connection = _connection;
 
-	queue.forEach(queryItem => {
-		callLoggingFunction(queryItem.functionName, queryItem.parameter);
-	});
+	if (!ignoreQueue) {
+		queue.forEach(queryItem => {
+			callLoggingFunction(queryItem.functionName, queryItem.parameter);
+		});
+	}
 }
