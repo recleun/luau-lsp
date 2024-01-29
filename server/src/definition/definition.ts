@@ -54,7 +54,6 @@ function checkTableFieldsReferences(fields: TableFields, position: Position): [t
 
 		const [isReference, reference] = checkReferences(field.References, position);
 		if (isReference) {
-			log("Okay, it's a field reference.");
 			return [true, field, reference];
 		}
 	}
@@ -101,6 +100,10 @@ function checkNode(
 		// Check for references.
 		const [isVariableReference, variableReference] = checkReferences(node.References, position);
 		if (isVariableReference) {
+			if (variableReference.End!.line < node.End.line ||
+				(variableReference.End!.line === node.End.line && variableReference.End!.character <= node.End.character)) {
+				return;
+			}
 			return {
 				Node: node,
 				NodeLocation: Range.create(node.Start, node.End),
@@ -174,7 +177,8 @@ function checkNode(
 }
 
 export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
-	for (const node of ast.Tokens) {
+	for (let index = ast.Tokens.length - 1; index >= 0; index--) {
+		const node = ast.Tokens[index];
 		if (node.Type !== "Variable Declaration" && node.Type !== "Type") {
 			if (!isInBounds(node.Start!, node.End!, position)) {
 				continue;

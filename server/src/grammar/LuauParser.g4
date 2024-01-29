@@ -27,8 +27,10 @@ statement: setExpression |
 
 lastStatement: RETURN expressionList? | BREAK;
 
-setExpression: varList1 EQUAL expressionList;
-compoundSetExpression: var CompoundOperations expression;
+setExpressionVar: NAME varSuffix*;
+setExpressionVarList: setExpressionVar (COMMA setExpressionVar)*;
+setExpression: setExpressionVarList EQUAL expressionList;
+compoundSetExpression: setExpressionVar CompoundOperations expression;
 
 doBlock: DO block END;
 whileExpression: WHILE expression doBlock;

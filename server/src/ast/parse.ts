@@ -96,8 +96,49 @@ class Listener implements LuauListener {
 	exitSetExpression(ctx: SetExpressionContext) {
 		if (ctx.exception) { return; }
 
-		ctx.varList1().text;
-		ctx.expressionList().text;
+		const variableList = ctx.setExpressionVarList();
+		const values = normalizeExpression(ctx.expressionList().expression(), currentAst);
+		let i = 0;
+		let line = variableList.start.line - 1;
+		let character = variableList.start.charPositionInLine;
+		variableList.setExpressionVar().forEach((setExpressionVarContext => {
+			const value = values[i]?.Value ?? PossibleTypesBuilder.asSimple("nil", "nil");
+			const type = values[i]?.Type ?? getTypeFromValue(value)[0];
+
+			const start = Position.create(line, character);
+			const end = getEnd(setExpressionVarContext.text, start);
+
+			const name = setExpressionVarContext.NAME();
+			const variable = VariableDeclarationBuilder.abstractCreate(
+				ValueBuilder.fromPossibleType(value),
+				type,
+				name.text
+			);
+			variable.NameStart = start;
+			variable.NameEnd = end;
+			const newEnd = getEnd(name.text, end);
+
+			if (newEnd.line !== end.line) {
+				line += newEnd.line - end.line;
+				character = newEnd.character;
+			} else {
+				character += newEnd.character - end.character;
+			}
+
+			// if (variable) {
+			// }
+
+			// This adds and copies to the references of the main variable, if found, but if
+			// not, it just clears the new variable's references as the `findVariable` would
+			// add one, the variable was added to the AST right above this!
+			const _variable = findVariable(name.text, currentAst, Range.create(start, end), true);
+			if (_variable) {
+				variable.References = _variable.References;
+			}
+
+			currentAst.Tokens.push(setNodeEnds(variable, setExpressionVarContext));
+			i++;
+		}));
 	}
 	enterWhileExpression(ctx: WhileExpressionContext) {
 		const whileLoop = WhileLoopBuilder.create(AstBuilder.withParent(currentAst));

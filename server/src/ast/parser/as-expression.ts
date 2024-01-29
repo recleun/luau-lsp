@@ -411,6 +411,7 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 	return [finalTypes, finalValues ?? finalTypes.map((_) => PossibleTypesBuilder.asSimple(""))];
 }
 
+//TODO: Check validity of args.
 export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: TypeDefinition[]): [TypeDefinition[], PossibleTypes[]] | undefined {
 	const name = nameAndArgs.NAME();
 	let finalType = finalTypes[0];
@@ -454,5 +455,4 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: T
 
 		return [ finalTypes, finalValues ];
 	}
-	// TODO: Make it return both type and value separately.
 }
