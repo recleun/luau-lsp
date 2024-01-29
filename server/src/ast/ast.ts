@@ -5,30 +5,35 @@ import { URI } from "vscode-languageserver";
 import { Constructors, Enums, globals } from "./env";
 import { logTable } from "../utilities";
 
-const ASTs: { [key: URI]: AST } = {};
+type AstWithGlobals = AST;
+const ASTs: { [key: URI]: [AstWithGlobals, AST] } = {};
 
 export function generateAST(parameter: TextDocument) {
 	const AST = parseFile(parameter, false);
-	ASTs[parameter.uri] = {
-		Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
-		Returns: AST.Returns,
-		Uri: parameter.uri,
-		Parent: AST.Parent,
-	};
+	ASTs[parameter.uri] = [
+		{
+			Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
+			Returns: AST.Returns,
+			Uri: parameter.uri,
+			Parent: AST.Parent
+		},
+		AST,
+	];
 
 	// logTable(ASTs[parameter.uri].Tokens);
 }
 
-export function getAST(document: TextDocument): AST;
-export function getAST(uri: URI): AST | undefined;
+export function getAST(document: TextDocument, includeGlobls: boolean): AST;
+export function getAST(uri: URI, includeGlobls: boolean): AST | undefined;
 
-export function getAST(parameter: TextDocument | URI) {
+export function getAST(parameter: TextDocument | URI, includeGlobls: boolean): AST | undefined {
+	const index = includeGlobls ? 0 : 1;
 	if (typeof parameter === "string") {
-		return ASTs[parameter];
+		return ASTs[parameter] ? ASTs[parameter][index] : undefined;
 
 	} else {
 		if (!ASTs[parameter.uri]) { generateAST(parameter); }
 
-		return ASTs[parameter.uri];
+		return ASTs[parameter.uri][index];
 	}
 }

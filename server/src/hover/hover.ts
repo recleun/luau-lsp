@@ -4,7 +4,7 @@ import { getNodeAtPosition } from "../definition";
 import { logTable, wrapInCodeBlocks } from "../utilities";
 
 export function onHover(hoverParams: HoverParams): Hover | undefined {
-	const ast = getAST(hoverParams.textDocument.uri);
+	const ast = getAST(hoverParams.textDocument.uri, false);
 	if (!ast) {
 		return;
 	}

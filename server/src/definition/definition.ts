@@ -173,7 +173,7 @@ export function getNodeAtPosition(position: Position, ast: AST): VariableData | 
 
 export function onDefinition(params: DefinitionParams): DefinitionLink[] {
 	const definitions: DefinitionLink[] = [];
-	const ast = getAST(params.textDocument.uri);
+	const ast = getAST(params.textDocument.uri, false);
 	if (!ast) {
 		return definitions;
 	}

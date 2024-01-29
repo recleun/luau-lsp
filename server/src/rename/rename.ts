@@ -9,7 +9,7 @@ export function onRename(params: RenameParams): WorkspaceEdit | null | undefined
 		return;
 	}
 
-	const ast = getAST(uri);
+	const ast = getAST(uri, false);
 	if (!ast || !ast.Uri) {
 		// AST wasn't found or it has no URI, having no URI means it isn't
 		// made by the user but rather one of the files used by this LSP for

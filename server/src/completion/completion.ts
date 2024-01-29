@@ -30,7 +30,7 @@ export function getCompletionItems(documents: TextDocuments<TextDocument>, textD
 	if (!document) { return []; }
 
 	const items: CompletionItem[] = [];
-	const parsedTokens = getAST(document).Tokens;
+	const parsedTokens = getAST(document, true).Tokens;
 
 	const text = document.getText();
 	const line = text.split("\n")[textDocumentPosition.position.line];
