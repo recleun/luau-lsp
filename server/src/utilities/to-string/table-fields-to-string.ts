@@ -1,4 +1,5 @@
 import { TableFields, TableField, TableFieldType } from "../../types";
+import { log } from "../logging-handler";
 import { tableKeyToString, toString } from "../to-string";
 import { isTableField, isTableFieldType } from "../type-checking";
 
@@ -12,7 +13,7 @@ export function tableFieldToString(field: TableField | TableFieldType, excludeKe
 
 	let key = "";
 	if (!excludeKey && stringKey !== "") {
-		key = `${stringKey}${isField ? " = " : " :"}`;
+		key = `${stringKey}${isField ? " = " : ": "}`;
 	}
 
 	return `${key}${stringField}`;

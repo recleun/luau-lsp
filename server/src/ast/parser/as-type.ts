@@ -1,4 +1,4 @@
-import { findType, log, logTable, toString } from "../../utilities";
+import { findType, log, logTable, tableFieldsToString, toString } from "../../utilities";
 import { functionTypeToString } from "../../utilities";
 import {
 	DiagnosticData,
@@ -289,7 +289,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 		let fields;
 		if ((type = tableType.type())) {
 			tableFields.push({
-				Key: ValueBuilder.fromString("string"),
+				Key: TypeDefinitionBuilder.fromString("[number]", "number"),
 				Type: asType(type, ast),
 				References: [],
 			});
@@ -317,7 +317,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 					const location = Range.create(start, getEnd(key, start));
 
 					tableFields.push({
-						Key: TypeDefinitionBuilder.fromString(key),
+						Key: TypeDefinitionBuilder.fromString(key, key),
 						Type: asType(tableProperty.type(), ast),
 						References: [],
 						NameStart: location.start,
@@ -327,11 +327,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 			});
 		}
 
-		const rawValue = toString(tableFields, ": ");
-
-		return TypeDefinitionBuilder.fromPossibleType(
-			PossibleTypesBuilder.asTable(tableFields, rawValue)
-		);
+		return TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asTable(tableFields));
 	} else if ((nestedType = type.type())) {
 		return asType(nestedType, ast);
 
