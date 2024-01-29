@@ -1,7 +1,7 @@
 import { Hover, HoverParams, MarkupKind } from "vscode-languageserver";
 import { getAST } from "../ast";
 import { getNodeAtPosition } from "../definition";
-import { wrapInCodeBlocks } from "../utilities";
+import { logTable, wrapInCodeBlocks } from "../utilities";
 
 export function onHover(hoverParams: HoverParams): Hover | undefined {
 	const ast = getAST(hoverParams.textDocument.uri);

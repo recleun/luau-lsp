@@ -8,6 +8,8 @@ import {
 	VariableDeclaration,
 	IfStatement,
 	ElseIfStatement,
+	TableFields,
+	ASTNode,
 } from "../types";
 import {
 	ElseExpressionContext,
@@ -42,7 +44,7 @@ import { asType, getTypeFromValue } from "./parser/as-type";
 import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { asForInLoop, asForLoop, createForInPlaceholder, createForNumericPlaceholder } from "./parser/as-for-loop";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { log, logTable } from "../utilities";
+import { findVariable, log, logTable, tableFieldsToString, tableKeyToString, toString } from "../utilities";
 import { addDiagnostic, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
@@ -192,16 +194,91 @@ class Listener implements LuauListener {
 		);
 		const end = getEnd(name.text, start);
 
-		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
-
-		//TODO: Change `VariableName` and add it to a field in a table (if needed).
-		const variable = parsedToken as VariableDeclaration;
+		const variable = setNodeEnds(currentAst.Tokens.pop()!, ctx) as (ASTNode & VariableDeclaration);
 		variable.VariableName = ctx.funcname().text;
 		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
 		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 		variable.NameStart = start;
 		variable.NameEnd = end;
+
+		const funcName = ctx.funcname();
+		let character = funcName.start.charPositionInLine;
+		let line = funcName.start.line - 1;
+
+		let enclosingTable: VariableDeclaration | undefined;
+		let tableFields: TableFields | null | undefined;
+		let lastName: string | undefined;
+		for (const name of funcName.NAME()) {
+			if (lastName) {
+				if (lastName.includes("\n")) {
+					character = 0;
+					let index;
+					while ((index = lastName.indexOf("\n")) !== -1) {
+						line++;
+					}
+				} else {
+					character += lastName.trim().length;
+				}
+
+				if (tableFields) {
+					for (const field of tableFields) {
+						tableFields = null;
+
+						const key = tableKeyToString(field.Key);
+						if (key === lastName) {
+							if (field.Type.TypeValue.Type.Type === "Table") {
+								tableFields = field.Type.TypeValue.Type.Value;
+							}
+
+							break;
+						}
+					}
+				} else {
+					const start = Position.create(line, character);
+					const currentLocation = Range.create(start, getEnd(lastName, start));
+
+					const table = findVariable(lastName, currentAst, currentLocation);
+					if (!table || table.VariableType.TypeValue.Type.Type !== "Table") {
+						addDiagnostic({
+							message: "Creating function in a non-table value.",
+							code: "no-parent-table",
+							range: currentLocation,
+							severity: DiagnosticSeverity.Warning,
+						});
+					} else {
+						enclosingTable = table;
+						tableFields = table.VariableType.TypeValue.Type.Value;
+					}
+				}
+			}
+
+			lastName = name.text;
+		}
+
+		if (tableFields === null) {
+			// Missing table, send diagnostics!
+			return;
+		}
+
+		variable.VariableName = lastName!;
+		if (tableFields === undefined) {
+			currentAst.Tokens.push(variable);
+		} else {
+			tableFields.push({
+				Key: lastName!,
+				Type: variable.VariableType,
+				Value: variable.VariableValue.Value,
+				Start: variable.Start,
+				End: variable.End,
+				NameStart: variable.NameStart,
+				NameEnd: variable.NameEnd,
+				References: [],
+			});
+			enclosingTable!.VariableType.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
+			enclosingTable!.VariableValue.Value.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
+			enclosingTable!.RawValue = toString(enclosingTable, true);
+		}
 	}
 
 	enterLocalFunction(ctx: LocalFunctionContext) {
@@ -263,16 +340,7 @@ class Listener implements LuauListener {
 			);
 			variable.NameStart = Position.create(line, character);
 			variable.NameEnd = getEnd(separatedNames[i], variable.NameStart);
-
-			if (variable.VariableType.TypeName !== "") {
-				variable.RawValue += `: ${variable.VariableType.TypeName}`;
-			}
-			if (
-				variable.VariableValue.Value.RawValue !== ""
-				&& variable.VariableValue.Value.RawValue !== "nil"
-			) {
-				variable.RawValue += ` = ${variable.VariableValue.Value.RawValue}`;
-			}
+			variable.RawValue = toString(variable, true);
 
 			if (separatedNames[i].includes("\n")) {
 				character = 0;
