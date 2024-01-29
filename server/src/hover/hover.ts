@@ -10,14 +10,21 @@ function fixTableFieldsIndentation(rawValue: string): string {
 
 	let indent = 0;
 	return rawValue.split("\n").map(line => {
-		if (line.indexOf("}") !== -1) {
-			indent--;
+		const ignore = line.includes("{") && line.includes("}");
+		if (!ignore) {
+			let closeBracketsIndex = 0;
+			if ((closeBracketsIndex = line.indexOf("}", closeBracketsIndex)) !== -1) {
+				indent--;
+			}
 		}
 
 		line = `${"\t".repeat(indent)}${line.trim()}`;
 
-		if (line.indexOf("{") !== -1) {
-			indent++;
+		if (!ignore) {
+			let openBracketsIndex = 0;
+			if ((openBracketsIndex = line.indexOf("{", openBracketsIndex)) !== -1) {
+				indent++;
+			}
 		}
 
 		return line;
