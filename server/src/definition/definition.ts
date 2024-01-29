@@ -1,7 +1,7 @@
 import { DefinitionLink, DefinitionParams, Hover, MarkupKind, Position, Range } from "vscode-languageserver";
 import { getCurrentUri } from "../diagnostics";
 import { AST, VariableDeclaration, Reference, TableField, TableFieldType, TableFields, ASTNode, TypeDefinition, AstToken } from "../types";
-import { log, logTable, tableFieldToString } from "../utilities";
+import { log, logTable, tableFieldToString, tableKeyToString } from "../utilities";
 import { getAST } from "../ast";
 
 export function isInBounds(start: Position, end: Position, position: Position): boolean {
@@ -54,6 +54,7 @@ function checkTableFieldsReferences(fields: TableFields, position: Position): [t
 
 		const [isReference, reference] = checkReferences(field.References, position);
 		if (isReference) {
+			log("Okay, it's a field reference.");
 			return [true, field, reference];
 		}
 	}
@@ -71,14 +72,14 @@ function checkTableFields(fields: TableFields, position: Position): [true, Table
 		}
 
 		if (isInBounds(field.Start, field.End, position)) {
+			return [true, field];
+		} else {
 			if (field.Type.TypeValue.Type.Type === "Table") {
 				const [isField, innerField] = checkTableFields(field.Type.TypeValue.Type.Value, position);
 				if (isField) {
 					return [true, innerField];
 				}
 			}
-
-			return [true, field];
 		}
 	}
 

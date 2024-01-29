@@ -263,7 +263,7 @@ class Listener implements LuauListener {
 		if (tableFields === undefined) {
 			currentAst.Tokens.push(variable);
 		} else {
-			const start = Position.create(line, character);
+			const start = Position.create(line, character + 1);
 			const end = getEnd(name, start);
 
 			tableFields.push({
