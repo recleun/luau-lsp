@@ -44,6 +44,13 @@ function checkTableFieldsReferences(fields: TableFields, position: Position): [t
 		if (!field.NameStart || !field.NameEnd) {
 			continue;
 		}
+		if (field.Type.TypeValue.Type.Type === "Table") {
+			const [isReference, innerField, reference] = checkTableFieldsReferences(field.Type.TypeValue.Type.Value, position);
+
+			if (isReference) {
+				return [true, innerField, reference];
+			}
+		}
 
 		const [isReference, reference] = checkReferences(field.References, position);
 		if (isReference) {
@@ -64,6 +71,13 @@ function checkTableFields(fields: TableFields, position: Position): [true, Table
 		}
 
 		if (isInBounds(field.Start, field.End, position)) {
+			if (field.Type.TypeValue.Type.Type === "Table") {
+				const [isField, innerField] = checkTableFields(field.Type.TypeValue.Type.Value, position);
+				if (isField) {
+					return [true, innerField];
+				}
+			}
+
 			return [true, field];
 		}
 	}
