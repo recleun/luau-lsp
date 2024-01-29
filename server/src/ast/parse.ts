@@ -273,13 +273,7 @@ class Listener implements LuauListener {
 				End: variable.End,
 				NameStart: variable.NameStart,
 				NameEnd: variable.NameEnd,
-				References: [
-					// {
-					// 	FileUri: getCurrentUri()!,
-					// 	Start: variable.NameStart,
-					// 	End: variable.NameEnd,
-					// }
-				],
+				References: [],
 			});
 			enclosingTable!.VariableType.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
 			enclosingTable!.VariableValue.Value.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
