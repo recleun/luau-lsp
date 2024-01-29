@@ -2,8 +2,9 @@ import { TableFields, TableField, TableFieldType } from "../../types";
 import { tableKeyToString, toString } from "../to-string";
 import { isTableField, isTableFieldType } from "../type-checking";
 
-export function tableFieldToString(field: TableField | TableFieldType, separator: string, excludeKey: boolean): string {
-	const stringField = (isTableField(field)
+export function tableFieldToString(field: TableField | TableFieldType, excludeKey: boolean): string {
+	const isField = isTableField(field);
+	const stringField = (isField
 		? field.Value.RawValue
 		: field.Type.RawValue
 	).split("\n").join("\n\t");
@@ -11,7 +12,7 @@ export function tableFieldToString(field: TableField | TableFieldType, separator
 
 	let key = "";
 	if (!excludeKey && stringKey !== "") {
-		key = `${stringKey}${separator}`;
+		key = `${stringKey}${isField ? "=" : ":"}`;
 	}
 
 	return `${key}${stringField}`;
@@ -31,7 +32,7 @@ export function tableFieldsToString(value: TableFields, separator: string): stri
 			}
 		}
 
-		return `\t ${tableFieldToString(field, separator, excludeKey)}`;
+		return `\t ${tableFieldToString(field, excludeKey)}`;
 	}).join(",\n");
 
 	if (value.length === 1 && typeof value[0].Key === "string" && parseInt(value[0].Key)) {
