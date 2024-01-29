@@ -375,7 +375,7 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 	}
 
 	let indexedKey;
-	let offset = 0;
+	let offset = 1;
 
 	const name = varSuffex.NAME();
 	let expression;
@@ -399,15 +399,17 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 				const uri = getCurrentUri();
 
 				if (uri && varSuffex.stop) {
+					// const start = Position.create(varSuffex.start.line - 1, varSuffex.start.charPositionInLine + offset);
+					// const end = getEnd(key, start);
 					field.References.push({
 						FileUri: uri,
 						Start: {
 							line: varSuffex.start.line - 1,
-							character: varSuffex.start.charPositionInLine + 1,
+							character: varSuffex.start.charPositionInLine + offset,
 						},
 						End: {
 							line: varSuffex.stop.line - 1,
-							character: varSuffex.start.charPositionInLine + 1 + key.length + offset,
+							character: varSuffex.start.charPositionInLine + key.length + offset,
 						},
 					});
 				}
