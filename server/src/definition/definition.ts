@@ -184,6 +184,7 @@ export function getNodeAtPosition(position: Position, ast: AST): VariableData | 
 				|| node.Type === "ForIn"
 				|| node.Type === "ForNumeric"
 				|| node.Type === "Repeat Block"
+				|| node.Type === "While Loop"
 			) {
 				return getNodeAtPosition(position, node.Body);
 			}

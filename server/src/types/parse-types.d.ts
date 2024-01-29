@@ -4,7 +4,8 @@ import {
 	ForLoop,
 	TypeDefinition,
 	RepeatBlock,
-	VariableDeclaration
+	VariableDeclaration,
+	WhileLoop,
 } from "./parse-types";
 
 export interface ASTNode {
@@ -16,7 +17,8 @@ export type PossibleTokens =
 	TypeDefinition |
 	ForLoop |
 	IfStatement |
-	RepeatBlock
+	RepeatBlock |
+	WhileLoop
 
 export type AstToken = ASTNode & PossibleTokens
 
@@ -33,6 +35,8 @@ export * from "./ast/parse/function-types";
 export * from "./ast/parse/for-loops";
 export * from "./ast/parse/if-statements";
 export * from "./ast/parse/repeat-blocks";
+export * from "./ast/parse/while-loop";
+
 export * from "./ast/parse/reference";
 export * from "./ast/env/api-dump";
 export * from "./ast/env/data-types";

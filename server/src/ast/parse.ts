@@ -11,6 +11,7 @@ import {
 	TableFields,
 	ASTNode,
 	RepeatBlock,
+	WhileLoop,
 } from "../types";
 import {
 	ElseExpressionContext,
@@ -51,6 +52,7 @@ import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
 import { AstBuilder, IfStatementBuilder, PossibleTypesBuilder, RepeatBlockBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
 import { Enums, Constructors, globals } from "./env";
+import { WhileLoopBuilder } from "../classes/while-loop-builder";
 
 let currentAst: AST;
 
@@ -97,12 +99,17 @@ class Listener implements LuauListener {
 		ctx.varList1().text;
 		ctx.expressionList().text;
 	}
-	//TODO:
+	enterWhileExpression(ctx: WhileExpressionContext) {
+		const whileLoop = WhileLoopBuilder.create(AstBuilder.withParent(currentAst));
+		currentAst.Tokens.push(whileLoop);
+		currentAst = whileLoop.Body;
+	}
 	exitWhileExpression(ctx: WhileExpressionContext) {
 		if (ctx.exception) { return; }
 
-		ctx.expression().text;
-		ctx.doBlock().block().text;
+		const parentTokens = currentAst.Parent!.Tokens;
+		const whileLoop = setNodeEnds(parentTokens[parentTokens.length - 1], ctx) as WhileLoop;
+		whileLoop.EndingCondition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
 	enterRepeatBlock(ctx: RepeatBlockContext) {
 		const repeatBlock = RepeatBlockBuilder.create(AstBuilder.withParent(currentAst));
