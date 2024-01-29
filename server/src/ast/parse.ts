@@ -230,7 +230,10 @@ class Listener implements LuauListener {
 			if (variable.VariableType.TypeName !== "") {
 				variable.RawValue += `: ${variable.VariableType.TypeName}`;
 			}
-			if (variable.VariableValue.Value.RawValue !== "") {
+			if (
+				variable.VariableValue.Value.RawValue !== ""
+				&& variable.VariableValue.Value.RawValue !== "nil"
+			) {
 				variable.RawValue += ` = ${variable.VariableValue.Value.RawValue}`;
 			}
 

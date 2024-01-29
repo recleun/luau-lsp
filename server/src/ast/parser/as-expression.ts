@@ -12,6 +12,7 @@ import {
 import {
 	findVariable,
 	getCleanRawValue,
+	isTableField,
 	isTypeDefinition,
 	log,
 	logTable,
@@ -411,7 +412,9 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 					});
 				}
 
-				return [[ field.Type ], [ field.Type.TypeValue.Type ]];
+				return [[ field.Type ], [
+					isTableField(field) ? field.Value : field.Type.TypeValue.Type
+				]];
 			}
 		}
 	}
