@@ -81,8 +81,9 @@ function checkNode(
 	}
 	const type = getType(node);
 
-	const isHere = isInBounds(node.Start, node.End, position);
+	const isHere = isInBounds(node.NameStart, node.NameEnd, position);
 	if (!isHere) {
+		// Check for references.
 		const [isVariableReference, variableReference] = checkReferences(node.References, position);
 		if (isVariableReference) {
 			return {
@@ -95,20 +96,18 @@ function checkNode(
 			};
 		}
 
-		if (type.TypeValue.Type.Type !== "Table") {
-			return;
-		}
-
-		const [isReference, field, reference] = checkTableFieldsReferences(type.TypeValue.Type.Value, position);
-		if (isReference) {
-			return {
-				Node: field,
-				NodeLocation: Range.create(field.Start!, field.End!),
-				NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
-				RawValue: field.Type.RawValue,
-				ReferenceLocation: Range.create(reference.Start, reference.End),
-				References: field.References,
-			};
+		if (type.TypeValue.Type.Type === "Table") {
+			const [isReference, field, reference] = checkTableFieldsReferences(type.TypeValue.Type.Value, position);
+			if (isReference) {
+				return {
+					Node: field,
+					NodeLocation: Range.create(field.Start!, field.End!),
+					NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
+					RawValue: field.Type.RawValue,
+					ReferenceLocation: Range.create(reference.Start, reference.End),
+					References: field.References,
+				};
+			}
 		}
 	}
 
@@ -142,6 +141,11 @@ function checkNode(
 				References: field.References,
 			};
 		}
+	}
+
+	if (!isHere) {
+		// Didn't find any references
+		return;
 	}
 
 	return {

@@ -45,7 +45,7 @@ import { DiagnosticSeverity, Position, Range } from "vscode-languageserver";
 import { asForInLoop, asForLoop, createForInPlaceholder, createForNumericPlaceholder } from "./parser/as-for-loop";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { findVariable, log, logTable, tableFieldsToString, tableKeyToString, toString } from "../utilities";
-import { addDiagnostic, setFile } from "../diagnostics";
+import { addDiagnostic, getCurrentUri, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
 import { AstBuilder, IfStatementBuilder, PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
@@ -273,7 +273,13 @@ class Listener implements LuauListener {
 				End: variable.End,
 				NameStart: variable.NameStart,
 				NameEnd: variable.NameEnd,
-				References: [],
+				References: [
+					// {
+					// 	FileUri: getCurrentUri()!,
+					// 	Start: variable.NameStart,
+					// 	End: variable.NameEnd,
+					// }
+				],
 			});
 			enclosingTable!.VariableType.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
 			enclosingTable!.VariableValue.Value.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);

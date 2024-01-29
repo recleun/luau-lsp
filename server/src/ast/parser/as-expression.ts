@@ -33,17 +33,6 @@ import { addDiagnostic, getCurrentUri } from "../../diagnostics";
 import { PossibleTypesBuilder, TypeDefinitionBuilder } from "../../classes";
 import { globals } from "../env";
 
-type AntlrNode = {
-	start: {
-		line: number,
-		charPositionInLine: number,
-	},
-	stop?: {
-		line: number,
-		charPositionInLine: number,
-	},
-}
-
 export function getEnd(text: string, start: Position): Position {
 	const newLines = text.split('\n');
 
@@ -399,8 +388,6 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 				const uri = getCurrentUri();
 
 				if (uri && varSuffex.stop) {
-					// const start = Position.create(varSuffex.start.line - 1, varSuffex.start.charPositionInLine + offset);
-					// const end = getEnd(key, start);
 					field.References.push({
 						FileUri: uri,
 						Start: {
