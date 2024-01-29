@@ -183,6 +183,7 @@ export function createForInPlaceholder(): ForIn {
 		Variables: [],
 		Body: {
 			Tokens: [],
+			Returns: [],
 		},
 	};
 
@@ -200,6 +201,7 @@ export function createForNumericPlaceholder(): ForNumeric {
 		},
 		Body: {
 			Tokens: [],
+			Returns: [],
 		},
 	};
 

@@ -1,5 +1,5 @@
 import { URI } from "vscode-languageserver";
-import { AST, AstTokens } from "../types";
+import { AST, AstTokens, TypeDefinition } from "../types";
 
 export class AstBuilder {
 	/**
@@ -10,9 +10,10 @@ export class AstBuilder {
 	 * @param tokens The tokens of the AST
 	 * @returns
 	 */
-	static create(parent: AST, uri: URI, tokens: AstTokens): AST {
+	static create(parent: AST, returns: TypeDefinition[], uri: URI, tokens: AstTokens): AST {
 		return {
 			Tokens: tokens,
+			Returns: returns,
 			Parent: parent,
 			Uri: uri,
 		};
@@ -27,6 +28,7 @@ export class AstBuilder {
 	static default(tokens: AstTokens=[]): AST {
 		return {
 			Tokens: tokens,
+			Returns: [],
 		};
 	}
 
@@ -41,6 +43,7 @@ export class AstBuilder {
 	static withParent(parent: AST, tokens: AstTokens=[]): AST {
 		return {
 			Tokens: tokens,
+			Returns: [],
 			Parent: parent,
 		};
 	}
@@ -55,6 +58,7 @@ export class AstBuilder {
 	static withUri(uri: URI, tokens: AstTokens=[]): AST {
 		return {
 			Tokens: tokens,
+			Returns: [],
 			Uri: uri,
 		};
 	}

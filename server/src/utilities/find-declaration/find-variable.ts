@@ -45,6 +45,7 @@ function _findVariable(variableName: string, AST: AST, currentLocation: Range): 
 export function findVariable(variableName: string, AST: AST, currentLocation: Range): VariableDeclaration | undefined {
 	const completeAST: AST = {
 		Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
+		Returns: [], // Returns don't matter here!
 		Parent: AST.Parent,
 		Uri: AST.Uri,
 	};

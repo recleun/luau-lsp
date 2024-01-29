@@ -319,6 +319,7 @@ class Listener implements LuauListener {
 export function parse(code: string, stopLog?: boolean): AST {
 	const AST: AST = {
 		Tokens: [],
+		Returns: [],
 	};
 	currentAst = AST;
 	// if (stopLog) {

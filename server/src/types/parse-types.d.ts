@@ -18,6 +18,7 @@ export type AstToken = ASTNode & PossibleTokens
 export type AstTokens = AstToken[];
 export interface AST {
 	Tokens: AstTokens,
+	Returns: TypeDefinition[],
 	Uri?: URI,
 	Parent?: AST,
 }

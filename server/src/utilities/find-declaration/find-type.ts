@@ -61,6 +61,7 @@ function _findType(typeName: string, AST: AST, currentLocation: Range): TypeDefi
 export function findType(typeName: string, AST: AST, currentLocation: Range): TypeDefinition | undefined {
 	const completeAST: AST = {
 		Tokens: [...AST.Tokens, ...globalTypes],
+		Returns: [], // Returns don't matter here!
 		Parent: AST.Parent,
 		Uri: AST.Uri,
 	};

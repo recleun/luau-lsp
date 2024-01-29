@@ -11,6 +11,7 @@ export function generateAST(parameter: TextDocument) {
 	const AST = parseFile(parameter, false);
 	ASTs[parameter.uri] = {
 		Tokens: [...AST.Tokens, Enums, ...Constructors, ...globals],
+		Returns: AST.Returns,
 		Uri: parameter.uri,
 		Parent: AST.Parent,
 	};
