@@ -23,11 +23,7 @@ function getTypesFromTable(value: TableType, index: number): TypeDefinition[] {
 			variableTypes.push(TypeDefinitionBuilder.fromString(field.Key));
 		}
 
-		if (isTypeDefinition(field.Value)) {
-			variableTypes.push(field.Value);
-		} else {
-			variableTypes.push(TypeDefinitionBuilder.fromPossibleType(field.Value));
-		}
+		variableTypes.push(field.Type);
 	}
 
 	return variableTypes;

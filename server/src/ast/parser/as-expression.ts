@@ -411,13 +411,7 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 					});
 				}
 
-				const value = field.Value as PossibleTypes;
-
-				return (
-					isTypeDefinition(field.Value)
-					&& [[ field.Value ], [ field.Value.TypeValue.Type ]]
-					|| [[ getTypeFromValue(value)[0] ], [ value ]]
-				);
+				return [[ field.Type ], [ field.Type.TypeValue.Type ]];
 			}
 		}
 	}
@@ -433,8 +427,8 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: T
 		for (const field of finalType.TypeValue.Type.Value) {
 			const key = tableKeyToString(field.Key);
 			if (key === name.text) {
-				finalType = field.Value as TypeDefinition;
-				finalValues = [field.Value as PossibleTypes];
+				finalType = field.Type as TypeDefinition;
+				finalValues = [ field.Type.TypeValue.Type ];
 
 				const uri = getCurrentUri();
 

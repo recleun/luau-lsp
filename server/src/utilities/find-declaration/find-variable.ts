@@ -60,8 +60,8 @@ export function tryGetFinalValue(tableChain: string, table: TableFields): TableF
 		if (
 			fieldNames[1] === tableKeyToString(field.Key).substring(0, fieldNames[1].length)
 		) {
-			if (field.Value.Type === "Table" && fieldNames.length > 2) {
-				fields = tryGetFinalValue(tableChain.replace(/.*?[.:]/, ""), field.Value.Value);
+			if (field.Type.TypeValue.Type.Type === "Table" && fieldNames.length > 2) {
+				fields = tryGetFinalValue(tableChain.replace(/.*?[.:]/, ""), field.Type.TypeValue.Type.Value);
 				break;
 			} else if (fieldNames.length <= 2) {
 				fields.push(field);

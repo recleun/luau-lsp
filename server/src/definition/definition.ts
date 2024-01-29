@@ -102,7 +102,7 @@ function checkNode(
 					Node: field,
 					NodeLocation: Range.create(field.Start!, field.End!),
 					NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
-					RawValue: field.Value.RawValue,
+					RawValue: field.Type.RawValue,
 					ReferenceLocation: Range.create(reference.Start, reference.End),
 					References: field.References,
 				};

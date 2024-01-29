@@ -235,8 +235,11 @@ class Listener implements LuauListener {
 			}
 
 			if (separatedNames[i].includes("\n")) {
-				line++;
 				character = 0;
+				let index = 0;
+				while ((index = separatedNames[i].indexOf("\n", index + 1)) !== -1) {
+					line++;
+				}
 			} else {
 				character += separatedNames[i].trim().length;
 			}

@@ -64,7 +64,7 @@ export function getCompletionItems(documents: TextDocuments<TextDocument>, textD
 					},
 					insertTextFormat: InsertTextFormat.Snippet,
 					insertTextMode: InsertTextMode.adjustIndentation,
-					detail: value.Value.Type === "Type" ? value.Value.RawValue : "",
+					detail: value.Type.RawValue,
 				});
 			}
 		} else {

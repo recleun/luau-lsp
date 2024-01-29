@@ -153,13 +153,13 @@ DataTypesJson.DataTypes.forEach(dataType => {
 
 			fields.push({
 				Key: member.Name,
-				Value: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asFunction(parameters, returns)),
+				Type: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asFunction(parameters, returns)),
 				References: [],
 			});
 		} else {
 			fields.push({
 				Key: member.Name,
-				Value: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asSimple(member.ValueType?.Name || "any")),
+				Type: TypeDefinitionBuilder.fromPossibleType(PossibleTypesBuilder.asSimple(member.ValueType?.Name || "any")),
 				References: [],
 			});
 		}

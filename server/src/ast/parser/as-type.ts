@@ -290,7 +290,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 		if ((type = tableType.type())) {
 			tableFields.push({
 				Key: ValueBuilder.fromString("string"),
-				Value: asType(type, ast),
+				Type: asType(type, ast),
 				References: [],
 			});
 
@@ -305,7 +305,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 
 					tableFields.push({
 						Key: asType(key, ast),
-						Value: asType(fieldIndexer.type(1), ast),
+						Type: asType(fieldIndexer.type(1), ast),
 						References: [],
 						NameStart: location.start,
 						NameEnd: location.end,
@@ -318,7 +318,7 @@ export function asSimpleType(type: SimpleTypeContext, ast: AST): TypeDefinition 
 
 					tableFields.push({
 						Key: TypeDefinitionBuilder.fromString(key),
-						Value: asType(tableProperty.type(), ast),
+						Type: asType(tableProperty.type(), ast),
 						References: [],
 						NameStart: location.start,
 						NameEnd: location.end,

@@ -9,7 +9,7 @@ export interface TableField extends TableFieldBase {
 	Type: TypeDefinition,
 }
 export interface TableFieldType extends TableFieldBase {
-	Value: TypeDefinition,
+	Type: TypeDefinition,
 }
 
 export interface SimpleType {

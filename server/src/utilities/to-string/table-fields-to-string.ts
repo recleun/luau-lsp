@@ -3,9 +3,7 @@ import { tableKeyToString, toString } from "../to-string";
 import { isTypeDefinition } from "../type-checking";
 
 export function tableFieldToString(field: TableField | TableFieldType, separator: string, excludeKey: boolean): string {
-	const stringField = (
-		isTypeDefinition(field.Value) && toString(field.Value) || field.Value.RawValue
-	).split("\n").join("\n\t");
+	const stringField = field.Type.RawValue.split("\n").join("\n\t");
 	const stringKey = tableKeyToString(field.Key);
 
 	let key = "";
