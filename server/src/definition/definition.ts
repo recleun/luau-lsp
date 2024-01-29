@@ -83,33 +83,33 @@ function checkNode(
 
 	const isHere = isInBounds(node.Start, node.End, position);
 	if (!isHere) {
-		const [isReference, reference] = checkReferences(node.References, position);
-		if (isReference) {
+		const [isVariableReference, variableReference] = checkReferences(node.References, position);
+		if (isVariableReference) {
 			return {
 				Node: node,
 				NodeLocation: Range.create(node.Start, node.End),
 				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
 				RawValue: node.RawValue,
-				ReferenceLocation: Range.create(reference.Start, reference.End),
+				ReferenceLocation: Range.create(variableReference.Start, variableReference.End),
 				References: node.References,
 			};
 		}
 
-		if (type.TypeValue.Type.Type === "Table") {
-			const [isReference, field, reference] = checkTableFieldsReferences(type.TypeValue.Type.Value, position);
-			if (isReference) {
-				return {
-					Node: field,
-					NodeLocation: Range.create(field.Start!, field.End!),
-					NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
-					RawValue: field.Type.RawValue,
-					ReferenceLocation: Range.create(reference.Start, reference.End),
-					References: field.References,
-				};
-			}
+		if (type.TypeValue.Type.Type !== "Table") {
+			return;
 		}
 
-		return;
+		const [isReference, field, reference] = checkTableFieldsReferences(type.TypeValue.Type.Value, position);
+		if (isReference) {
+			return {
+				Node: field,
+				NodeLocation: Range.create(field.Start!, field.End!),
+				NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
+				RawValue: field.Type.RawValue,
+				ReferenceLocation: Range.create(reference.Start, reference.End),
+				References: field.References,
+			};
+		}
 	}
 
 	if (node.Type === "Variable Declaration" && node.VariableValue.Value.Type === "Function") {
