@@ -3,6 +3,27 @@ import { getAST } from "../ast";
 import { getNodeAtPosition } from "../definition";
 import { logTable, wrapInCodeBlocks } from "../utilities";
 
+function fixTableFieldsIndentation(rawValue: string): string {
+	if (rawValue.length === 0) {
+		return rawValue;
+	}
+
+	let indent = 0;
+	return rawValue.split("\n").map(line => {
+		if (line.indexOf("}") !== -1) {
+			indent--;
+		}
+
+		line = `${"\t".repeat(indent)}${line.trim()}`;
+
+		if (line.indexOf("{") !== -1) {
+			indent++;
+		}
+
+		return line;
+	}).join("\n");
+}
+
 export function onHover(hoverParams: HoverParams): Hover | undefined {
 	const ast = getAST(hoverParams.textDocument.uri, false);
 	if (!ast) {
@@ -17,7 +38,7 @@ export function onHover(hoverParams: HoverParams): Hover | undefined {
 	return {
 		contents: {
 			kind: MarkupKind.Markdown,
-			value: wrapInCodeBlocks(result.RawValue),
+			value: wrapInCodeBlocks(fixTableFieldsIndentation(result.RawValue)),
 		},
 		range: result.ReferenceLocation,
 	};
