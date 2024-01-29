@@ -52,19 +52,19 @@ export function log(...parameters: (string | number | boolean)[]) {
  */
 export function logTable(...parameters: (any[] | object)[]) {
 	for (const parameter of parameters) {
-		// const cache: any[] = [];
+		const cache: any[] = [];
 
 		const str = JSON.stringify(parameter, (key, value) => {
 			if (key === "Parent") {
 				return "*reference to parent AST*";
 			}
-			// if (typeof value === 'object' && value !== null) {
-			// 	if (cache.includes(value) && !(key.includes("Value") || key.includes("Type"))) {
-			// 		return "*cyclic reference/reused value detected*";
-			// 	}
+			if (typeof value === 'object' && value !== null) {
+				if (cache.includes(value)) {
+					return "*cyclic reference/reused value detected*";
+				}
 
-			// 	cache.push(value);
-			// }
+				cache.push(value);
+			}
 
 			return value;
 		});
