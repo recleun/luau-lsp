@@ -6,11 +6,16 @@ import {
 	NormalizedNames,
 	AstToken,
 	VariableDeclaration,
+	IfStatement,
+	ElseIfStatement,
 } from "../types";
 import {
+	ElseExpressionContext,
+	ElseIfExpressionContext,
 	ForExpressionContext,
 	ForInExpressionContext,
 	GlobalFunctionContext,
+	IfExpressionContext,
 	IfStatementContext,
 	LocalFunctionContext,
 	LuauParser,
@@ -41,7 +46,7 @@ import { log, logTable } from "../utilities";
 import { addDiagnostic, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
-import { PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
+import { AstBuilder, IfStatementBuilder, PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
 import { Enums, Constructors, globals } from "./env";
 
 let currentAst: AST;
@@ -98,12 +103,42 @@ class Listener implements LuauListener {
 		ctx.block().text;
 		ctx.expression().text;
 	}
-	//TODO:
-	exitIfStatement(ctx: IfStatementContext) {
+
+	enterIfExpression(ctx: IfExpressionContext) {
+		const ifStatement = IfStatementBuilder.default(AstBuilder.withParent(currentAst));
+		currentAst.Tokens.push(ifStatement);
+		currentAst = ifStatement.Body;
+	}
+	enterElseIfExpression(ctx: ElseIfExpressionContext) {
+		const parentTokens = currentAst.Parent!.Tokens;
+		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
+
+		const elseIfStatement = IfStatementBuilder.elseIf(AstBuilder.withParent(currentAst.Parent!));
+		currentAst = elseIfStatement.Body;
+
+		ifStatement.ElseIfStatements.push(elseIfStatement);
+	}
+	exitElseIfExpression(ctx: ElseIfExpressionContext) {
+		const parentTokens = currentAst.Parent!.Tokens;
+		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
+		const elseIfStatement = ifStatement.ElseIfStatements[ifStatement.ElseIfStatements.length - 1];
+		elseIfStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
+	}
+	enterElseExpression(ctx: ElseExpressionContext) {
+		const parentTokens = currentAst.Parent!.Tokens;
+		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
+
+		const elseStatement = IfStatementBuilder.else(AstBuilder.withParent(currentAst.Parent!));
+		currentAst = elseStatement.Body;
+
+		ifStatement.Else = elseStatement;
+	}
+	exitIfExpression(ctx: IfExpressionContext) {
 		if (ctx.exception) { return; }
 
-		ctx.expression();
-		ctx.block();
+		const parentTokens = currentAst.Parent!.Tokens;
+		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
+		ifStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
 
 	enterForExpression(ctx: ForExpressionContext) {
@@ -119,6 +154,7 @@ class Listener implements LuauListener {
 		currentAst = currentAst.Parent!;
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForLoop(currentAst, ctx, parsedToken as ForNumeric);
+		//TODO: Check for wrong direction looping (start + step will never reach or pass end)
 	}
 
 	enterForInExpression(ctx: ForInExpressionContext) {
@@ -134,6 +170,7 @@ class Listener implements LuauListener {
 		currentAst = currentAst.Parent!;
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForInLoop(currentAst, ctx, parsedToken as ForIn);
+		//TODO: Check for non-numerical tables + ipairs and send diagnostics
 	}
 
 	enterGlobalFunction(ctx: GlobalFunctionContext) {

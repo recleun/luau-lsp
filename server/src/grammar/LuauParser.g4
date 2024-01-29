@@ -29,14 +29,22 @@ lastStatement: RETURN expressionList? | BREAK;
 
 setExpression: varList1 EQUAL expressionList;
 compoundSetExpression: var CompoundOperations expression;
+
 doBlock: DO block END;
 whileExpression: WHILE expression doBlock;
 repeatBlock: REPEAT block UNTIL expression;
-ifStatement: IF expression THEN block (ELSEIF expression THEN block)* (ELSE block)? END;
+
+ifStatement: ifExpression elseIfExpression* elseExpression? END;
+ifExpression: IF expression THEN block;
+elseIfExpression: ELSEIF expression THEN block;
+elseExpression: (ELSE block);
+
 forExpression: FOR optionalTypedName EQUAL expression COMMA expression (COMMA expression)? doBlock;
 forInExpression: FOR allNamesList IN (globalIteratorFunction | expressionList) doBlock;
+
 globalFunction: FUNCTION funcname funcbody;
 localFunction: LOCAL FUNCTION NAME funcbody;
+
 variableDeclaration: LOCAL allNamesList ((EQUAL expressionList) | doBlock)?;
 typeDeclaration: EXPORT? TYPE NAME (OPEN_ANGLE_BRACKET genericTypeListWithDefaults CLOSE_ANGLE_BRACKET)? EQUAL type;
 
