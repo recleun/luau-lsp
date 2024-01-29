@@ -37,9 +37,9 @@ export function toString(value: any, ...params: any[]): string {
 	} else if (isReturns(value)) {
 		return returnsToString(value);
 	} else if (isTableFields(value)) {
-		return tableFieldsToString(value, params[0] as string);
+		return tableFieldsToString(value);
 	} else if (isTableField(value)) {
-		return tableFieldToString(value, params[0] as string, params[1] as boolean);
+		return tableFieldToString(value, params[0] as boolean);
 	}
 
 	return String(value);

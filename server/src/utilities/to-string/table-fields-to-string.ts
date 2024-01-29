@@ -18,7 +18,7 @@ export function tableFieldToString(field: TableField | TableFieldType, excludeKe
 	return `${key}${stringField}`;
 }
 
-export function tableFieldsToString(value: TableFields, separator: string): string {
+export function tableFieldsToString(value: TableFields): string {
 	if (value.length === 0) { return "{}"; }
 
 	let index = 1;

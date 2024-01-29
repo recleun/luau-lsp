@@ -33,7 +33,7 @@ export class PossibleTypesBuilder {
 	static asTable(value: TableFields, rawValue?: string): TableType {
 		return {
 			Type: "Table",
-			RawValue: rawValue || tableFieldsToString(value, " = "),
+			RawValue: rawValue || tableFieldsToString(value),
 			Value: value,
 		};
 	}

@@ -155,7 +155,7 @@ export function buildTable(table: TableconstructorContext, AST: AST): TableType 
 			NameEnd: keyLocation.end,
 		});
 	});
-	parsedTable.RawValue = tableFieldsToString(tableFields, " = ");
+	parsedTable.RawValue = tableFieldsToString(tableFields);
 
 	return parsedTable;
 }
