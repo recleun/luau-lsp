@@ -4,4 +4,5 @@ export * from "./ast-builder";
 export * from "./possible-types-builder";
 export * from "./value-builder";
 export * from "./if-statement-builder";
+export * from "./repeat-block-builder";
 // export * from "./";

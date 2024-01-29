@@ -1,7 +1,11 @@
 import { Position, Range, URI } from "vscode-languageserver";
-import { IfStatement } from "./parse-types";
-import { ForLoop } from "./ast/parse/for-loops";
-import { TypeDefinition, Value, VariableDeclaration } from "./ast/parse/possible-type";
+import {
+	IfStatement,
+	ForLoop,
+	TypeDefinition,
+	RepeatBlock,
+	VariableDeclaration
+} from "./parse-types";
 
 export interface ASTNode {
 	Start?: Position,
@@ -11,7 +15,8 @@ export type PossibleTokens =
 	VariableDeclaration |
 	TypeDefinition |
 	ForLoop |
-	IfStatement
+	IfStatement |
+	RepeatBlock
 
 export type AstToken = ASTNode & PossibleTokens
 
@@ -27,6 +32,7 @@ export * from "./ast/parse/possible-type";
 export * from "./ast/parse/function-types";
 export * from "./ast/parse/for-loops";
 export * from "./ast/parse/if-statements";
+export * from "./ast/parse/repeat-blocks";
 export * from "./ast/parse/reference";
 export * from "./ast/env/api-dump";
 export * from "./ast/env/data-types";

@@ -10,6 +10,7 @@ import {
 	ElseIfStatement,
 	TableFields,
 	ASTNode,
+	RepeatBlock,
 } from "../types";
 import {
 	ElseExpressionContext,
@@ -48,7 +49,7 @@ import { findVariable, log, logTable, tableFieldsToString, tableKeyToString, toS
 import { addDiagnostic, getCurrentUri, setFile } from "../diagnostics";
 import { LuauLexer } from "./LuauGrammar/LuauLexer";
 import { LuauParserListener as LuauListener } from './LuauGrammar/LuauParserListener';
-import { AstBuilder, IfStatementBuilder, PossibleTypesBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
+import { AstBuilder, IfStatementBuilder, PossibleTypesBuilder, RepeatBlockBuilder, TypeDefinitionBuilder, ValueBuilder, VariableDeclarationBuilder } from "../classes";
 import { Enums, Constructors, globals } from "./env";
 
 let currentAst: AST;
@@ -83,6 +84,11 @@ class ErrorListener implements ANTLRErrorListener<Token> {
 	}
 }
 
+//TODO:
+// Move returns inside while expressions, repeat blocks, if statements and do blocks to the
+// parent AST, and inside global/local functions, try infering type and/or sending diagnostics
+// using that knowledge.
+//TODO: Join global and local functions to decrease amount of repeated code.
 class Listener implements LuauListener {
 	//TODO:
 	exitSetExpression(ctx: SetExpressionContext) {
@@ -98,12 +104,17 @@ class Listener implements LuauListener {
 		ctx.expression().text;
 		ctx.doBlock().block().text;
 	}
-	//TODO:
+	enterRepeatBlock(ctx: RepeatBlockContext) {
+		const repeatBlock = RepeatBlockBuilder.create(AstBuilder.withParent(currentAst));
+		currentAst.Tokens.push(repeatBlock);
+		currentAst = repeatBlock.Body;
+	}
 	exitRepeatBlock(ctx: RepeatBlockContext) {
 		if (ctx.exception) { return; }
 
-		ctx.block().text;
-		ctx.expression().text;
+		const parentTokens = currentAst.Parent!.Tokens;
+		const repeatBlock = setNodeEnds(parentTokens[parentTokens.length - 1], ctx) as RepeatBlock;
+		repeatBlock.EndingCondition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
 
 	enterIfExpression(ctx: IfExpressionContext) {
@@ -141,6 +152,12 @@ class Listener implements LuauListener {
 		const parentTokens = currentAst.Parent!.Tokens;
 		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
 		ifStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
+	}
+	exitIfStatement(ctx: IfStatementContext) {
+		if (ctx.exception) { return; }
+
+		const parentTokens = currentAst.Parent!.Tokens;
+		setNodeEnds(parentTokens[parentTokens.length - 1], ctx);
 	}
 
 	enterForExpression(ctx: ForExpressionContext) {
