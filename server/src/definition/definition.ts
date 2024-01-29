@@ -176,6 +176,18 @@ function checkNode(
 export function getNodeAtPosition(position: Position, ast: AST): VariableData | undefined {
 	for (const node of ast.Tokens) {
 		if (node.Type !== "Variable Declaration" && node.Type !== "Type") {
+			if (!isInBounds(node.Start!, node.End!, position)) {
+				continue;
+			}
+			if (
+				node.Type === "If Statement"
+				|| node.Type === "ForIn"
+				|| node.Type === "ForNumeric"
+				|| node.Type === "Repeat Block"
+			) {
+				return getNodeAtPosition(position, node.Body);
+			}
+
 			continue;
 		}
 
