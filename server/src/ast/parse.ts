@@ -187,12 +187,12 @@ class Listener implements LuauListener {
 
 		const functionData = buildFunction(ctx.funcbody(), currentAst.Parent!, currentAst);
 		currentAst = currentAst.Parent!;
-		const name = ctx.funcname();
+		const funcName = ctx.funcname();
 		const start = getEnd(
 			ctx.FUNCTION().text,
 			Position.create(ctx.start.line - 1, ctx.start.charPositionInLine)
 		);
-		const end = getEnd(name.text, start);
+		const end = getEnd(funcName.text, start);
 
 		const variable = setNodeEnds(currentAst.Tokens.pop()!, ctx) as (ASTNode & VariableDeclaration);
 		variable.VariableName = ctx.funcname().text;
@@ -202,71 +202,146 @@ class Listener implements LuauListener {
 		variable.NameStart = start;
 		variable.NameEnd = end;
 
-		const funcName = ctx.funcname();
+		// let character = funcName.start.charPositionInLine;
+		// let line = funcName.start.line - 1;
+
+		// let enclosingTable: VariableDeclaration | undefined;
+		// let tableFields: TableFields | null | undefined;
+		// let lastName: string | undefined;
+		// for (const name of funcName.NAME()) {
+
+		// 	lastName = name.text;
+		// 	// if (lastName) {
+		// 		if (lastName.includes("\n")) {
+		// 			character = 0;
+		// 			let index = 0;
+		// 			while ((index = lastName.indexOf("\n", index + 1)) !== -1) {
+		// 				line++;
+		// 			}
+		// 		} else {
+		// 			character += lastName.length + 1;
+		// 		}
+		// 		if (tableFields) {
+		// 			for (const field of tableFields) {
+		// 				tableFields = null;
+
+		// 				const key = tableKeyToString(field.Key);
+		// 				if (key === lastName) {
+		// 					if (field.Type.TypeValue.Type.Type === "Table") {
+		// 						const start = Position.create(line, character - 1);
+		// 						const end = getEnd(lastName, start);
+
+		// 						tableFields = field.Type.TypeValue.Type.Value;
+		// 						field.References.push({
+		// 							FileUri: getCurrentUri()!,
+		// 							Start: start,
+		// 							End: end
+		// 						});
+		// 					}
+
+		// 					break;
+		// 				}
+		// 			}
+		// 		} else {
+		// 			const start = Position.create(line, character - 2);
+		// 			const currentLocation = Range.create(start, getEnd(lastName, start));
+
+		// 			const table = findVariable(lastName, currentAst, currentLocation);
+		// 			if (!table || table.VariableType.TypeValue.Type.Type !== "Table") {
+		// 				addDiagnostic({
+		// 					message: "Creating function in a non-table value.",
+		// 					code: "no-parent-table",
+		// 					range: currentLocation,
+		// 					severity: DiagnosticSeverity.Warning,
+		// 				});
+		// 			} else {
+		// 				enclosingTable = table;
+		// 				tableFields = table.VariableType.TypeValue.Type.Value;
+		// 			}
+		// 		}
+		// 	// }
+		// }
+
+		// if (tableFields === null) {
+		// 	// Missing table, send diagnostics!
+		// 	return;
+		// }
+
+		// variable.VariableName = lastName!;
+		// if (tableFields === undefined) {
+		// 	currentAst.Tokens.push(variable);
+		// } else {
+		// 	tableFields.push({
+		// 		Key: lastName!,
+		// 		Type: variable.VariableType,
+		// 		Value: variable.VariableValue.Value,
+		// 		Start: variable.Start,
+		// 		End: variable.End,
+		// 		NameStart: variable.NameStart,
+		// 		NameEnd: variable.NameEnd,
+		// 		References: [],
+		// 	});
+		// 	enclosingTable!.VariableType.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
+		// 	enclosingTable!.VariableValue = ValueBuilder.fromTypeDefinition(enclosingTable!.VariableType);
+		// 	enclosingTable!.RawValue = toString(enclosingTable, true);
+		// }
+
 		let character = funcName.start.charPositionInLine;
 		let line = funcName.start.line - 1;
 
+		let name;
 		let enclosingTable: VariableDeclaration | undefined;
-		let tableFields: TableFields | null | undefined;
-		let lastName: string | undefined;
-		for (const name of funcName.NAME()) {
-			if (lastName) {
-				if (lastName.includes("\n")) {
+		let tableFields: TableFields | undefined;
+		for (const chainedName of funcName.NAME()) {
+			if (name) {
+				if (name.includes("\n")) {
 					character = 0;
-					let index;
-					while ((index = lastName.indexOf("\n")) !== -1) {
+					let index = 0;
+					while ((index = name.indexOf("\n", index + 1)) !== -1) {
 						line++;
 					}
 				} else {
-					character += lastName.trim().length;
+					character += name.length + 1;
 				}
 
-				if (tableFields) {
+				const start = Position.create(line, character);
+				const location = Range.create(start, getEnd(name, start));
+
+				if (enclosingTable && tableFields) {
 					for (const field of tableFields) {
-						tableFields = null;
-
 						const key = tableKeyToString(field.Key);
-						if (key === lastName) {
-							if (field.Type.TypeValue.Type.Type === "Table") {
-								tableFields = field.Type.TypeValue.Type.Value;
-							}
-
-							break;
+						if (key !== name) {
+							tableFields = undefined;
+							continue;
 						}
+						if (field.Type.TypeValue.Type.Type !== "Table") {
+							continue;
+						}
+
+						tableFields = field.Type.TypeValue.Type.Value;
+						break;
 					}
 				} else {
-					const start = Position.create(line, character);
-					const currentLocation = Range.create(start, getEnd(lastName, start));
-
-					const table = findVariable(lastName, currentAst, currentLocation);
-					if (!table || table.VariableType.TypeValue.Type.Type !== "Table") {
-						addDiagnostic({
-							message: "Creating function in a non-table value.",
-							code: "no-parent-table",
-							range: currentLocation,
-							severity: DiagnosticSeverity.Warning,
-						});
-					} else {
-						enclosingTable = table;
-						tableFields = table.VariableType.TypeValue.Type.Value;
+					enclosingTable = findVariable(name, currentAst, location);
+					if (!enclosingTable || enclosingTable.VariableType.TypeValue.Type.Type !== "Table") {
+						break;
 					}
+
+					tableFields = enclosingTable.VariableType.TypeValue.Type.Value;
 				}
 			}
 
-			lastName = name.text;
+			name = chainedName.text;
 		}
 
-		if (tableFields === null) {
-			// Missing table, send diagnostics!
-			return;
-		}
+		name = name!.trim();
 
-		variable.VariableName = lastName!;
+		variable.VariableName = name!;
 		if (tableFields === undefined) {
 			currentAst.Tokens.push(variable);
 		} else {
 			tableFields.push({
-				Key: lastName!,
+				Key: name!,
 				Type: variable.VariableType,
 				Value: variable.VariableValue.Value,
 				Start: variable.Start,
@@ -275,8 +350,6 @@ class Listener implements LuauListener {
 				NameEnd: variable.NameEnd,
 				References: [],
 			});
-			enclosingTable!.VariableType.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
-			enclosingTable!.VariableValue.Value.RawValue = toString(enclosingTable!.VariableType.TypeValue.Type.Value);
 			enclosingTable!.RawValue = toString(enclosingTable, true);
 		}
 	}

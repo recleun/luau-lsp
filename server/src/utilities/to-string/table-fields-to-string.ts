@@ -5,10 +5,9 @@ import { isTableField, isTableFieldType } from "../type-checking";
 
 export function tableFieldToString(field: TableField | TableFieldType, excludeKey: boolean): string {
 	const isField = isTableField(field);
-	const stringField = (isField
-		? field.Value.RawValue
-		: field.Type.RawValue
-	).split("\n").join("\n\t");
+	const stringField = toString(isField ? field.Value : field.Type, true) // To force update the raw values.
+		.split("\n")
+		.join("\n\t");
 	const stringKey = tableKeyToString(field.Key);
 
 	let key = "";
@@ -33,7 +32,7 @@ export function tableFieldsToString(value: TableFields): string {
 			}
 		}
 
-		return `\t ${tableFieldToString(field, excludeKey)}`;
+		return `\t${tableFieldToString(field, excludeKey)}`;
 	}).join(",\n");
 
 	if (value.length === 1 && typeof value[0].Key === "string" && parseInt(value[0].Key)) {
