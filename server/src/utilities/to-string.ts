@@ -11,12 +11,10 @@ import { returnsToString } from "./to-string/returns-to-string";
 import { tableFieldToString, tableFieldsToString } from "./to-string/table-fields-to-string";
 
 /**
- * Turn a type from the parsed types into a string representation while passing extra
- * characters to the functions, possible values for the first item are:
+ * Turn a type from one of the parsed types into a string representation while passing extra
+ * parameters to the functions associated with the type, possible values for the first argument
+ * are:
  * * boolean - passed as `excludeType` parameter for function parameters only.
- * * string - passed as `separator` character for table field**s** only.
- *
- * for the second item, only possible value is:
  * * boolean - passed as `excludeKey` to table field only.
  *
  * @param value
