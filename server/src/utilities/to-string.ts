@@ -1,9 +1,14 @@
-import { ConvertableTypes } from "../types";
-import { isTypeDefinition, isValue, isParameters, isReturns } from "./type-checking";
+import {
+	isTypeDefinition,
+	isValue,
+	isParameters,
+	isReturns,
+	isTableField,
+	isTableFields
+} from "./type-checking";
 import { parametersToString } from "./to-string/parameters-to-string";
 import { returnsToString } from "./to-string/returns-to-string";
 import { tableFieldToString, tableFieldsToString } from "./to-string/table-fields-to-string";
-import { isTableField, isTableFields } from "./type-checking/is-table-field";
 
 /**
  * Turn a type from the parsed types into a string representation while passing extra
