@@ -74,7 +74,7 @@ function checkTableFields(fields: TableFields, position: Position): [true, Table
 function checkNode(
 	position: Position,
 	node: ReferenceableNode,
-	getType: (node: ReferenceableNode) => TypeDefinition
+	getType: (node: ReferenceableNode) => TypeDefinition,
 ): VariableData | undefined {
 	if (!node.Start || !node.End || !node.NameStart || !node.NameEnd) {
 		return;
@@ -135,8 +135,8 @@ function checkNode(
 		if (isField) {
 			return {
 				Node: field,
-				NodeLocation: Range.create(node.Start, node.End),
-				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+				NodeLocation: Range.create(field.Start!, field.End!),
+				NodeNameLocation: Range.create(field.NameStart!, field.NameEnd!),
 				RawValue: tableFieldToString(field, false),
 				ReferenceLocation: Range.create(field.Start!, field.End!),
 				References: field.References,

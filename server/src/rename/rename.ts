@@ -4,12 +4,7 @@ import { getCurrentUri } from "../diagnostics";
 import { getAST } from "../ast";
 
 export function onRename(params: RenameParams): WorkspaceEdit | null | undefined {
-	const uri = getCurrentUri();
-	if (!uri) {
-		return;
-	}
-
-	const ast = getAST(uri, false);
+	const ast = getAST(	params.textDocument.uri, true);
 	if (!ast || !ast.Uri) {
 		// AST wasn't found or it has no URI, having no URI means it isn't
 		// made by the user but rather one of the files used by this LSP for
