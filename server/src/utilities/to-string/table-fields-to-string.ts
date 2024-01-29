@@ -12,7 +12,7 @@ export function tableFieldToString(field: TableField | TableFieldType, excludeKe
 
 	let key = "";
 	if (!excludeKey && stringKey !== "") {
-		key = `${stringKey}${isField ? "=" : ":"}`;
+		key = `${stringKey}${isField ? " = " : " :"}`;
 	}
 
 	return `${key}${stringField}`;
