@@ -167,8 +167,8 @@ local _G: {}
 
 local function settings(): GlobalSettings
 end
-local function require(module: any): any
-end
+-- local function require(module: any): any
+-- end
 type bit32 = {
 	lshift: (x: number, disp: number) -> number,
 	rrotate: (x: number, disp: number) -> number,

@@ -141,6 +141,7 @@ function checkNode(
 				References: node.References,
 			};
 		}
+
 		return result;
 	} else if (isHere && type.TypeValue.Type.Type === "Function") {
 		return {
