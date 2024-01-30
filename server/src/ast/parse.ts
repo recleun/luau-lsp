@@ -58,17 +58,14 @@ import { WhileLoopBuilder } from "../classes/while-loop-builder";
 
 let currentAst: AST;
 
-function setNodeEnds(token: AstToken, context: ParserRuleContext): AstToken {
+function setNodeEnds<T extends ASTNode | AstToken>(token: T, context: ParserRuleContext): T {
 	token.Start = Position.create(context.start.line - 1, context.start.charPositionInLine);
 	token.End = getEnd(context.text, token.Start);
 
 	return token;
 }
 
-function onChunkLeave(chunk: ChunkContext, isFunction: boolean = false) {
-	if (!currentAst.Parent) {
-		return;
-	}
+function onChunkLeave(chunk: ChunkContext, isFunction: boolean = false, keepParent: boolean = false) {
 	const lastStatement = chunk.lastStatement();
 	if (lastStatement) {
 		const expressions = lastStatement.expressionList()?.expression();
@@ -84,9 +81,12 @@ function onChunkLeave(chunk: ChunkContext, isFunction: boolean = false) {
 			}
 		}
 	}
+	if (!currentAst.Parent || keepParent) {
+		return;
+	}
 
 	if (isFunction) {
-		currentAst = currentAst.Parent!;
+		currentAst = currentAst.Parent;
 		return;
 	}
 
@@ -98,7 +98,7 @@ function onChunkLeave(chunk: ChunkContext, isFunction: boolean = false) {
 		}
 	}
 
-	currentAst = currentAst.Parent!;
+	currentAst = currentAst.Parent;
 }
 
 class ErrorListener implements ANTLRErrorListener<Token> {
@@ -218,12 +218,12 @@ class Listener implements LuauListener {
 		ifStatement.ElseIfStatements.push(elseIfStatement);
 	}
 	exitElseIfExpression(ctx: ElseIfExpressionContext) {
-		onChunkLeave(ctx.block().chunk());
+		onChunkLeave(ctx.block().chunk(), false, true);
 
-		const parentTokens = currentAst.Tokens;
+		const parentTokens = currentAst.Parent!.Tokens;
 		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
-		const elseIfStatement = ifStatement.ElseIfStatements[ifStatement.ElseIfStatements.length - 1];
-		elseIfStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
+		const elseIfStatement = setNodeEnds(ifStatement.ElseIfStatements[ifStatement.ElseIfStatements.length - 1], ctx);
+		elseIfStatement.Condition = normalizeExpression([ctx.expression()], currentAst.Parent!)[0].Value.RawValue;
 	}
 	enterElseExpression(ctx: ElseExpressionContext) {
 		const parentTokens = currentAst.Parent!.Tokens;
@@ -235,22 +235,21 @@ class Listener implements LuauListener {
 		ifStatement.Else = elseStatement;
 	}
 	exitElseExpression(ctx: ElseExpressionContext) {
-		onChunkLeave(ctx.block().chunk());
-	}
-	exitIfExpression(ctx: IfExpressionContext) {
-		if (ctx.exception) { return; }
+		onChunkLeave(ctx.block().chunk(), false, true);
 
-		onChunkLeave(ctx.block().chunk());
-
-		const parentTokens = currentAst.Tokens;
+		const parentTokens = currentAst.Parent!.Tokens;
 		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
-		ifStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
+		setNodeEnds(ifStatement.Else!, ctx);
 	}
 	exitIfStatement(ctx: IfStatementContext) {
 		if (ctx.exception) { return; }
 
-		const parentTokens = currentAst.Parent!.Tokens;
-		setNodeEnds(parentTokens[parentTokens.length - 1], ctx);
+		const ifExpression = ctx.ifExpression();
+		onChunkLeave(ifExpression.block().chunk());
+
+		const parentTokens = currentAst.Tokens;
+		const ifStatement = setNodeEnds(parentTokens[parentTokens.length - 1], ctx) as IfStatement;
+		ifStatement.Condition = normalizeExpression([ifExpression.expression()], currentAst)[0].Value.RawValue;
 	}
 
 	enterForExpression(ctx: ForExpressionContext) {
@@ -439,7 +438,6 @@ class Listener implements LuauListener {
 			});
 		} else if (functionData.Value.Returns.length !== functionData.Body.Returns.length) {
 			const difference = functionData.Value.Returns.length - functionData.Body.Returns.length;
-			logTable(functionData.Value.Returns, functionData.Body.Returns);
 			if (difference > 0) {
 				for (let i = 0; i < difference; i++) {
 					if (!functionData.Value.Returns[i].Optional) {

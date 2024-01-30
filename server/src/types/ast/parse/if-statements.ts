@@ -1,6 +1,6 @@
-import { AST } from "../../parse-types";
+import { AST, ASTNode } from "../../parse-types";
 
-interface IfNode<T> {
+interface IfNode<T> extends ASTNode {
 	Body: AST,
 	Condition: T,
 }

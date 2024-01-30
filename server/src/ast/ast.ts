@@ -23,11 +23,11 @@ export function generateAST(parameter: TextDocument) {
 	// logTable(ASTs[parameter.uri].Tokens);
 }
 
-export function getAST(document: TextDocument, includeGlobls: boolean): AST;
-export function getAST(uri: URI, includeGlobls: boolean): AST | undefined;
+export function getAST(document: TextDocument, includeGlobals: boolean): AST;
+export function getAST(uri: URI, includeGlobals: boolean): AST | undefined;
 
-export function getAST(parameter: TextDocument | URI, includeGlobls: boolean): AST | undefined {
-	const index = includeGlobls ? 0 : 1;
+export function getAST(parameter: TextDocument | URI, includeGlobals: boolean): AST | undefined {
+	const index = includeGlobals ? 0 : 1;
 	if (typeof parameter === "string") {
 		return ASTs[parameter] ? ASTs[parameter][index] : undefined;
 

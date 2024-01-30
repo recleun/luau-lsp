@@ -130,15 +130,19 @@ function checkNode(
 	}
 
 	if (node.Type === "Variable Declaration" && node.VariableValue.Value.Type === "Function") {
-		return getNodeAtPosition(position, node.VariableValue.Value.Body) || {
-			Node: node,
-			NodeLocation: Range.create(node.Start, node.End),
-			NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
-			RawValue: node.RawValue,
-			ReferenceLocation: Range.create(node.Start, node.End),
-			References: node.References,
-		};
-	} else if (type.TypeValue.Type.Type === "Function") {
+		const result = getNodeAtPosition(position, node.VariableValue.Value.Body);
+		if (isHere && !result) {
+			return {
+				Node: node,
+				NodeLocation: Range.create(node.Start, node.End),
+				NodeNameLocation: Range.create(node.NameStart, node.NameEnd),
+				RawValue: node.RawValue,
+				ReferenceLocation: Range.create(node.Start, node.End),
+				References: node.References,
+			};
+		}
+		return result;
+	} else if (isHere && type.TypeValue.Type.Type === "Function") {
 		return {
 			Node: type,
 			NodeLocation: Range.create(node.Start, node.End),
@@ -147,7 +151,7 @@ function checkNode(
 			ReferenceLocation: Range.create(node.Start, node.End),
 			References: type.References,
 		};
-	} else if (type.TypeValue.Type.Type === "Table") {
+	} else if (isHere && type.TypeValue.Type.Type === "Table") {
 		const [isField, field] = checkTableFields(type.TypeValue.Type.Value, position);
 		if (isField) {
 			return {
@@ -184,13 +188,27 @@ export function getNodeAtPosition(position: Position, ast: AST): VariableData | 
 				continue;
 			}
 			if (
-				node.Type === "If Statement"
-				|| node.Type === "ForIn"
+				node.Type === "ForIn"
 				|| node.Type === "ForNumeric"
 				|| node.Type === "Repeat Block"
 				|| node.Type === "While Loop"
 			) {
 				return getNodeAtPosition(position, node.Body);
+			}
+			if (node.Type === "If Statement") {
+				const result = getNodeAtPosition(position, node.Body);
+				if (result) {
+					return result;
+				}
+				for (const statement of node.ElseIfStatements) {
+					const result = getNodeAtPosition(position, statement.Body);
+					if (result) {
+						return result;
+					}
+				}
+				if (node.Else) {
+					return getNodeAtPosition(position, node.Else.Body);
+				}
 			}
 
 			continue;
