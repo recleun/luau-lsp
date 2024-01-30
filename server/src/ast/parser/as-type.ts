@@ -204,11 +204,7 @@ export function getTypeFromValue(value: PossibleTypes): [TypeDefinition, ErrorMe
 			Value: "string",
 		}), getEscapeErrors(value.RawValue)];
 	} else if (value.RawValue === "true" || value.RawValue === "false") {
-		return [TypeDefinitionBuilder.fromPossibleType({
-			Type: "Simple",
-			RawValue: "boolean",
-			Value: "boolean",
-		}), []];
+		return [TypeDefinitionBuilder.fromString(value.RawValue, "boolean"), []];
 	} else if (parseInt(value.RawValue)) {
 		return [TypeDefinitionBuilder.fromPossibleType({
 			Type: "Simple",
@@ -348,10 +344,10 @@ export function asSingletoneType(type: SingletonTypeContext ,ast: AST): TypeDefi
 	const name = type.NAME();
 	let string;
 	if (type.FALSE()) {
-		return TypeDefinitionBuilder.fromString("false");
+		return TypeDefinitionBuilder.fromString("false", "boolean");
 
 	} else if (type.TRUE()) {
-		return TypeDefinitionBuilder.fromString("true");
+		return TypeDefinitionBuilder.fromString("true", "boolean");
 
 	} else if (name) {
 		const start = Position.create(type.start.line - 1, type.start.charPositionInLine);

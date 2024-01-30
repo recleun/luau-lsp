@@ -159,8 +159,19 @@ export function normalizeExpression1(expressions: Expression1Context[], ast: AST
 		let string;
 		let number;
 		let prefixExp;
+		if (expression.FALSE()) {
+			normalizedExpressions.push({
+				Value: PossibleTypesBuilder.asSimple("false"),
+				Type: TypeDefinitionBuilder.fromString("false", "boolean")
+			});
 
-		if ((table = expression.tableconstructor())) {
+		} else if (expression.TRUE()) {
+			normalizedExpressions.push({
+				Value: PossibleTypesBuilder.asSimple("true"),
+				Type: TypeDefinitionBuilder.fromString("true", "boolean")
+			});
+
+		} else if ((table = expression.tableconstructor())) {
 			normalizedExpressions.push({
 				Value: buildTable(table, ast)
 			});
@@ -277,16 +288,16 @@ export function handlePrefixExp(ast: AST, prefixExp: PrefixexpContext): [TypeDef
 		if (name) {
 			const variable = findVariable(name.text, ast, currentLocation);
 			if (variable) {
-				finalTypes = [ variable.VariableType ];
-				finalValues = [ variable.VariableValue.Value ];
+				finalTypes = [variable.VariableType];
+				finalValues = [variable.VariableValue.Value];
 			}
 
 		} else if ((expression = variable.expression())) {
 			const name = normalizeExpression([expression], ast)[0].Value.RawValue;
 			const variable = findVariable(name, ast, currentLocation);
 			if (variable?.VariableType.TypeValue.Type.Type === "Table") {
-				finalTypes = [ variable.VariableType ];
-				finalValues = [ variable.VariableType.TypeValue.Type ];
+				finalTypes = [variable.VariableType];
+				finalValues = [variable.VariableType.TypeValue.Type];
 			}
 		}
 
@@ -307,8 +318,8 @@ export function handlePrefixExp(ast: AST, prefixExp: PrefixexpContext): [TypeDef
 		const normalizedExpression = normalizeExpression([expression], ast)[0];
 
 		const [type, errorMessages] = getTypeFromValue(normalizedExpression.Value);
-		finalTypes = [ normalizedExpression.Type ?? type ];
-		finalValues = [ normalizedExpression.Value ];
+		finalTypes = [normalizedExpression.Type ?? type];
+		finalValues = [normalizedExpression.Value];
 
 		errorMessages.forEach((errorMessage => {
 			addDiagnostic({
@@ -343,8 +354,8 @@ export function handlePrefixExp(ast: AST, prefixExp: PrefixexpContext): [TypeDef
 	}
 
 	return [
-		finalTypes ?? [ TypeDefinitionBuilder.fromString("any") ],
-		finalValues ?? [ PossibleTypesBuilder.asSimple("") ],
+		finalTypes ?? [TypeDefinitionBuilder.fromString("any")],
+		finalValues ?? [PossibleTypesBuilder.asSimple("")],
 	];
 }
 
@@ -401,7 +412,7 @@ export function handleVarSuffex(varSuffex: VarSuffixContext, currentFinalTypes: 
 					});
 				}
 
-				return [[ field.Type ], [
+				return [[field.Type], [
 					isTableField(field) ? field.Value : field.Type.TypeValue.Type
 				]];
 			}
@@ -421,7 +432,7 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: T
 			const key = tableKeyToString(field.Key);
 			if (key === name.text) {
 				finalType = field.Type as TypeDefinition;
-				finalValues = [ field.Type.TypeValue.Type ];
+				finalValues = [field.Type.TypeValue.Type];
 
 				const uri = getCurrentUri();
 
@@ -453,6 +464,6 @@ export function handleNameAndArgs(nameAndArgs: NameAndArgsContext, finalTypes: T
 			finalValues.push(PossibleTypesBuilder.asSimple(""));
 		});
 
-		return [ finalTypes, finalValues ];
+		return [finalTypes, finalValues];
 	}
 }

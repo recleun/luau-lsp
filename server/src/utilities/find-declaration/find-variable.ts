@@ -12,9 +12,11 @@ function _findVariable(variableName: string, AST: AST, currentLocation: Range, i
 		const element = AST.Tokens[i];
 		if (element.Type !== "Variable Declaration") { continue; }
 		if (element.VariableName !== variableName) { continue; }
-		if (element.End!.line > currentLocation.end.line ||
-			(element.End!.line === currentLocation.end.line && element.End!.character >= currentLocation.end.character)) {
-			continue;
+		if (element.End) {
+			if (element.End.line > currentLocation.end.line ||
+				(element.End.line === currentLocation.end.line && element.End.character >= currentLocation.end.character)) {
+				continue;
+			}
 		}
 
 		const uri = getCurrentUri();

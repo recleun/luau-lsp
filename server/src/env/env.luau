@@ -1,7 +1,7 @@
 local game: DataModel
-function getmetatable(t: {}): {}?
+local function getmetatable(t: {}): {}?
 end
-function error(message: any, level: number?): ()
+local function error(message: any, level: number?): ()
 end
 
 type debug = {
@@ -30,9 +30,9 @@ type task = {
 }
 local task: task
 
-function tonumber(value: any, radix: number?): number
+local function tonumber(value: any, radix: number?): number
 end
-function pcall(f: () -> (), ...: any...): (boolean, ...any)
+local function pcall(f: () -> (), ...: any...): (boolean, ...any)
 end
 
 --@deprecated

@@ -14,6 +14,8 @@ import {
 	WhileLoop,
 } from "../types";
 import {
+	BlockContext,
+	ChunkContext,
 	ElseExpressionContext,
 	ElseIfExpressionContext,
 	ForExpressionContext,
@@ -63,6 +65,42 @@ function setNodeEnds(token: AstToken, context: ParserRuleContext): AstToken {
 	return token;
 }
 
+function onChunkLeave(chunk: ChunkContext, isFunction: boolean = false) {
+	if (!currentAst.Parent) {
+		return;
+	}
+	const lastStatement = chunk.lastStatement();
+	if (lastStatement) {
+		const expressions = lastStatement.expressionList()?.expression();
+
+		if (expressions) {
+			for (const [i, expression] of normalizeExpression(expressions, currentAst).entries()) {
+				if (currentAst.Returns[i]) {
+					currentAst.Returns[i].TypeValue.OrTypes.push(expression.Type ?? getTypeFromValue(expression.Value)[0]);
+					currentAst.Returns[i].RawValue = toString(currentAst.Returns[i], true);
+				} else {
+					currentAst.Returns[i] = expression.Type ?? getTypeFromValue(expression.Value)[0];
+				}
+			}
+		}
+	}
+
+	if (isFunction) {
+		currentAst = currentAst.Parent!;
+		return;
+	}
+
+	for (const [i, returnType] of currentAst.Returns.entries()) {
+		if (currentAst.Parent.Returns[i]) {
+			currentAst.Parent.Returns[i].TypeValue.OrTypes.push(returnType);
+		} else {
+			currentAst.Parent.Returns[i] = returnType;
+		}
+	}
+
+	currentAst = currentAst.Parent!;
+}
+
 class ErrorListener implements ANTLRErrorListener<Token> {
 	syntaxError(
 		recognizer: Recognizer<Token, any>,
@@ -92,7 +130,6 @@ class ErrorListener implements ANTLRErrorListener<Token> {
 // using that knowledge.
 //TODO: Join global and local functions to decrease amount of repeated code.
 class Listener implements LuauListener {
-	//TODO:
 	exitSetExpression(ctx: SetExpressionContext) {
 		if (ctx.exception) { return; }
 
@@ -125,9 +162,6 @@ class Listener implements LuauListener {
 				character += newEnd.character - end.character;
 			}
 
-			// if (variable) {
-			// }
-
 			// This adds and copies to the references of the main variable, if found, but if
 			// not, it just clears the new variable's references as the `findVariable` would
 			// add one, the variable was added to the AST right above this!
@@ -148,7 +182,9 @@ class Listener implements LuauListener {
 	exitWhileExpression(ctx: WhileExpressionContext) {
 		if (ctx.exception) { return; }
 
-		const parentTokens = currentAst.Parent!.Tokens;
+		onChunkLeave(ctx.doBlock().block().chunk());
+
+		const parentTokens = currentAst.Tokens;
 		const whileLoop = setNodeEnds(parentTokens[parentTokens.length - 1], ctx) as WhileLoop;
 		whileLoop.EndingCondition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
@@ -160,7 +196,9 @@ class Listener implements LuauListener {
 	exitRepeatBlock(ctx: RepeatBlockContext) {
 		if (ctx.exception) { return; }
 
-		const parentTokens = currentAst.Parent!.Tokens;
+		onChunkLeave(ctx.block().chunk());
+
+		const parentTokens = currentAst.Tokens;
 		const repeatBlock = setNodeEnds(parentTokens[parentTokens.length - 1], ctx) as RepeatBlock;
 		repeatBlock.EndingCondition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
@@ -180,7 +218,9 @@ class Listener implements LuauListener {
 		ifStatement.ElseIfStatements.push(elseIfStatement);
 	}
 	exitElseIfExpression(ctx: ElseIfExpressionContext) {
-		const parentTokens = currentAst.Parent!.Tokens;
+		onChunkLeave(ctx.block().chunk());
+
+		const parentTokens = currentAst.Tokens;
 		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
 		const elseIfStatement = ifStatement.ElseIfStatements[ifStatement.ElseIfStatements.length - 1];
 		elseIfStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
@@ -194,10 +234,15 @@ class Listener implements LuauListener {
 
 		ifStatement.Else = elseStatement;
 	}
+	exitElseExpression(ctx: ElseExpressionContext) {
+		onChunkLeave(ctx.block().chunk());
+	}
 	exitIfExpression(ctx: IfExpressionContext) {
 		if (ctx.exception) { return; }
 
-		const parentTokens = currentAst.Parent!.Tokens;
+		onChunkLeave(ctx.block().chunk());
+
+		const parentTokens = currentAst.Tokens;
 		const ifStatement = parentTokens[parentTokens.length - 1] as IfStatement;
 		ifStatement.Condition = normalizeExpression([ctx.expression()], currentAst)[0].Value.RawValue;
 	}
@@ -218,7 +263,8 @@ class Listener implements LuauListener {
 	exitForExpression(ctx: ForExpressionContext) {
 		if (ctx.exception) { return; }
 
-		currentAst = currentAst.Parent!;
+		onChunkLeave(ctx.doBlock().block().chunk());
+
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForLoop(currentAst, ctx, parsedToken as ForNumeric);
 		//TODO: Check for wrong direction looping (start + step will never reach or pass end)
@@ -234,7 +280,8 @@ class Listener implements LuauListener {
 	exitForInExpression(ctx: ForInExpressionContext) {
 		if (ctx.exception) { return; }
 
-		currentAst = currentAst.Parent!;
+		onChunkLeave(ctx.doBlock().block().chunk());
+
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
 		asForInLoop(currentAst, ctx, parsedToken as ForIn);
 		//TODO: Check for non-numerical tables + ipairs and send diagnostics
@@ -356,7 +403,7 @@ class Listener implements LuauListener {
 		if (ctx.exception) { return; }
 
 		const functionData = buildFunction(ctx.funcbody(), currentAst.Parent!, currentAst);
-		currentAst = currentAst.Parent!;
+		onChunkLeave(ctx.funcbody().block().chunk(), true);
 
 		const name = ctx.NAME();
 		const start = getEnd(
@@ -366,13 +413,72 @@ class Listener implements LuauListener {
 		const end = getEnd(name.text, start);
 
 		const parsedToken = setNodeEnds(currentAst.Tokens[currentAst.Tokens.length - 1], ctx);
-		const variable = parsedToken as VariableDeclaration;
+		const variable = parsedToken as (AstToken & VariableDeclaration);
 		variable.VariableName = ctx.NAME().text;
 		variable.VariableValue = ValueBuilder.fromPossibleType(functionData);
 		variable.VariableType = TypeDefinitionBuilder.fromPossibleType(functionData, "");
 		variable.RawValue = `function ${variable.VariableName}${variable.VariableType.RawValue}`;
 		variable.NameStart = start;
 		variable.NameEnd = end;
+
+		if (!getCurrentUri()) {
+			// env.luau will cause all the stuff down to not send false diagnostics, so we
+			// stop the code reaching it, env.ts calls `parse` with the code, so `setFile`
+			// is never called, nor will current uri be set.
+			return;
+		}
+
+		if (functionData.Value.Returns.length === 0) {
+			functionData.Value.Returns = functionData.Body.Returns.map(returnType => {
+				return {
+					Type: "FunctionReturn",
+					Optional: false,
+					ReturnType: returnType,
+					IsVariadic: false,
+				};
+			});
+		} else if (functionData.Value.Returns.length !== functionData.Body.Returns.length) {
+			const difference = functionData.Value.Returns.length - functionData.Body.Returns.length;
+			logTable(functionData.Value.Returns, functionData.Body.Returns);
+			if (difference > 0) {
+				for (let i = 0; i < difference; i++) {
+					if (!functionData.Value.Returns[i].Optional) {
+						addDiagnostic({
+							range: Range.create(
+								variable.Start!,
+								variable.End!
+							),
+							message: "Return type mismatch.",
+							code: "non-optional-return",
+						});
+					}
+				}
+			} else {
+				if (!functionData.Value.Returns[functionData.Value.Returns.length - 1].IsVariadic) {
+					addDiagnostic({
+						range: Range.create(variable.Start!, variable.End!),
+						message: "Return type mismatch.",
+						code: "excess-non-variadic-returns"
+					});
+				}
+			}
+		} else {
+			for (const [i, returnType] of functionData.Value.Returns.entries()) {
+				if (returnType.ReturnType.RawValue !== functionData.Body.Returns[i].RawValue) {
+					let message = "Return type mismatch. ";
+					message += `Expected return type to be "${returnType.ReturnType.RawValue}", got: "${functionData.Body.Returns[i].RawValue}"`;
+					addDiagnostic({
+						range: Range.create(
+							variable.Start!,
+							variable.End!
+						),
+						message: message,
+						code: "different-return-types",
+					});
+					break; // 1 error message is enough.
+				}
+			}
+		}
 	}
 
 	exitVariableDeclaration(ctx: VariableDeclarationContext) {

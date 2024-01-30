@@ -79,11 +79,6 @@ export abstract class LuauLexerBase extends Lexer {
 			this._input.consume();
 		}
 
-		log("\n");
-		log(equalsCount);
-		logTable(stringEquals);
-		log("\n");
-
 		if (equalsCount !== stringEquals[stringEquals.length - 1]) {
 			return false;
 		}

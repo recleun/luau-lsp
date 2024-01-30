@@ -45,8 +45,13 @@ export function toString(value: any, ...params: any[]): string {
 			// if (value.Value.Type === "Table") {
 				value.RawValue = value.TypeName !== "" ? `type ${value.TypeName}` : "";
 				value.RawValue += `${toString(value.TypeValue.Type)}`;
-				value.RawValue += value.TypeValue.AndTypes.map(type => toString(type)).join(" & ");
-				value.RawValue += value.TypeValue.OrTypes.map(type => toString(type)).join(" | ");
+
+				if (value.TypeValue.AndTypes.length > 0) {
+					value.RawValue = `(${value.RawValue} & ${value.TypeValue.AndTypes.map(type => toString(type)).join(" & ")})`;
+				}
+				if (value.TypeValue.OrTypes.length > 0) {
+					value.RawValue = `(${value.RawValue} | ${value.TypeValue.OrTypes.map(type => toString(type)).join(" | ")})`;
+				}
 			// }
 		}
 
@@ -71,7 +76,7 @@ export function toString(value: any, ...params: any[]): string {
 		}
 
 		return value.RawValue;
-		
+
 	} else if (isSimpleType(value)) {
 		return value.RawValue;
 	} else if (isTableType(value)) {

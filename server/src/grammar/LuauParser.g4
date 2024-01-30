@@ -25,7 +25,7 @@ statement: setExpression |
 	typeDeclaration |
 	comment;
 
-lastStatement: RETURN expressionList? | BREAK;
+lastStatement: RETURN expressionList? | BREAK | CONTINUE;
 
 setExpressionVar: NAME varSuffix*;
 setExpressionVarList: setExpressionVar (COMMA setExpressionVar)*;
@@ -39,7 +39,7 @@ repeatBlock: REPEAT block UNTIL expression;
 ifStatement: ifExpression elseIfExpression* elseExpression? END;
 ifExpression: IF expression THEN block;
 elseIfExpression: ELSEIF expression THEN block;
-elseExpression: (ELSE block);
+elseExpression: ELSE block;
 
 forExpression: FOR optionalTypedName EQUAL expression COMMA expression (COMMA expression)? doBlock;
 forInExpression: FOR allNamesList IN (globalIteratorFunction | expressionList) doBlock;
